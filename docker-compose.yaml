@@ -31,8 +31,6 @@ services:
       - rabbitmq
     networks:
       - app-network
-    volumes:
-      - ./shared:/app/shared
 
 #  web:
 #    build: ./web_service
@@ -43,8 +41,6 @@ services:
 #      - api
 #    networks:
 #      - app-network
-#    volumes:
-#      - ./shared:/app/shared
 
   local-transcription-service:
     build: ./local_transcription_service
@@ -56,8 +52,6 @@ services:
       - api
     networks:
       - app-network
-    volumes:
-      - ./shared:/app/shared
 
 #  local-language-service:
 #    build: ./local_language_service
@@ -67,8 +61,6 @@ services:
 #      - api
 #    networks:
 #      - app-network
-#    volumes:
-#      - ./shared:/app/shared
 
 #  local-graph-service:
 #    build: ./local_graph_service
@@ -78,8 +70,6 @@ services:
 #      - api
 #    networks:
 #      - app-network
-#    volumes:
-#      - ./shared:/app/shared
 
 networks:
   app-network:

@@ -52,6 +52,8 @@ services:
       - api
     networks:
       - app-network
+    volumes:
+      - local-models:/models
 
 #  local-language-service:
 #    build: ./local_language_service
@@ -78,3 +80,4 @@ networks:
 volumes:
   postgres-data:
   rabbitmq-data:
+  local-models:

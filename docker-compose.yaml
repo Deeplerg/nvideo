@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    ports:
+      - "15672:15672" # ui
+      - "5672:5672" # amqp
+    networks:
+      - app-network
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
+  postgres:
+    image: postgres:16-alpine
+    env_file: .env
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    ports:
+      - "5432:5432"
+
+  api:
+    build: ./api_service
+    env_file: .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - rabbitmq
+    networks:
+      - app-network
+    volumes:
+      - ./shared:/app/shared
+
+#  web:
+#    build: ./web_service
+#    env_file: .env
+#    ports:
+#      - "8001:8001"
+#    depends_on:
+#      - api
+#    networks:
+#      - app-network
+#    volumes:
+#      - ./shared:/app/shared
+
+  local-transcription-service:
+    build: ./local_transcription_service
+    env_file: .env
+    depends_on:
+      - rabbitmq
+      - api
+    networks:
+      - app-network
+    volumes:
+      - ./shared:/app/shared
+
+#  local-language-service:
+#    build: ./local_language_service
+#    env_file: .env
+#    depends_on:
+#      - rabbitmq
+#      - api
+#    networks:
+#      - app-network
+#    volumes:
+#      - ./shared:/app/shared
+
+#  local-graph-service:
+#    build: ./local_graph_service
+#    env_file: .env
+#    depends_on:
+#      - rabbitmq
+#      - api
+#    networks:
+#      - app-network
+#    volumes:
+#      - ./shared:/app/shared
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  rabbitmq-data:

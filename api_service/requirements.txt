@@ -1,0 +1,5 @@
+﻿fastapi[standard]>=0.115.11
+faststream[rabbit]>=0.5.35
+python-dotenv>=1.0.1
+sqlmodel>=0.0.24
+psycopg[binary]>=3.2.6

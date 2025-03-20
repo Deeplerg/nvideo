@@ -3,6 +3,7 @@ from fastapi_utils.tasks import repeat_every
 from faststream.rabbit import RabbitBroker
 from faststream.rabbit.fastapi import RabbitRouter, Logger
 from .services.DownloadService import DownloadService
+from .services.TranscriptionChunk import TranscriptionChunk
 from .services.TranscriptionService import TranscriptionService
 from .services.TransformerTranscriptionModel import TransformerTranscriptionModel
 from .services.FasterWhisperTranscriptionModel import FasterWhisperTranscriptionModel
@@ -51,6 +52,16 @@ async def publish_available_models():
             model_name=model
         ), queue="model.available")
 
+def convert_to_chunk_results(chunks: list[TranscriptionChunk]) -> list[TranscriptionChunkResult]:
+    return [
+        TranscriptionChunkResult(
+            text=chunk.text,
+            start_time_ms=chunk.start_time_ms,
+            end_time_ms=chunk.end_time_ms
+        )
+        for chunk in chunks
+    ]
+
 @router.subscriber("transcription.local-whisper")
 async def transcribe_local_whisper(
         body: TranscriptionRequest,
@@ -63,10 +74,14 @@ async def transcribe_local_whisper(
     path = download.download_video_by_id(body.video_id)
     logger.info(f"Downloaded {body.video_id} to {path}")
 
-    result = transcription.transcribe(path)
+    segment_length_ms = AppConfiguration.TRANSCRIPTION_CHUNK_SECONDS * 1000
+
+    chunks = transcription.transcribe(path, segment_length_ms)
     logger.info(f"Transcribed video {body.video_id}")
 
-    await broker.publish(TranscriptionResult(
+    result=TranscriptionResult(
         job_id = body.job_id,
-        result = result
-    ), queue="transcription.result")
+        result = convert_to_chunk_results(chunks)
+    )
+
+    await broker.publish(result, queue="transcription.result")

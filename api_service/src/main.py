@@ -196,7 +196,7 @@ async def handle_transcription_result(
     artifact = JobArtifact(
         job_id = job_id,
         type = "transcription",
-        content = body.result
+        content = [chunk.model_dump() for chunk in body.result]
     )
     session.add(artifact)
 

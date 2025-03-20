@@ -22,7 +22,7 @@ class JobArtifact(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     job_id: UUID = Field(default=None, foreign_key="job.id")
     type: str
-    content: str
+    content: dict = Field(sa_column=Column(JSON))
 
 class AvailableModel(SQLModel, table=True):
     name: str = Field(primary_key=True)

@@ -1,4 +1,6 @@
-﻿from fastapi import FastAPI, Depends
+﻿import os
+
+from fastapi import FastAPI, Depends
 from fastapi_utils.tasks import repeat_every
 from faststream.rabbit import RabbitBroker
 from faststream.rabbit.fastapi import RabbitRouter, Logger
@@ -85,3 +87,6 @@ async def transcribe_local_whisper(
     )
 
     await broker.publish(result, queue="transcription.result")
+
+    if os.path.exists(path):
+        os.remove(path)

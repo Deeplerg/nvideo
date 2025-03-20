@@ -47,6 +47,13 @@ services:
     env_file: .env
     ports:
       - "8001:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
     depends_on:
       - rabbitmq
       - api

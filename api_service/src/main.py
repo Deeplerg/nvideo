@@ -120,6 +120,17 @@ async def get_user(
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
+
+@app.get("/user/{user_id}/jobs", response_model=list[JobResponse])
+async def get_user_jobs(
+        user_id: int,
+        session: Annotated[Session, Depends(get_session)]
+):
+    statement = select(Job).where(Job.user_id == user_id)
+    jobs = session.exec(statement).all()
+    return jobs
+
+
 @app.get("/artifacts/{artifact_id}", response_model=ArtifactResponse)
 async def get_artifact(
     artifact_id: UUID,

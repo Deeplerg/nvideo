@@ -1,10 +1,11 @@
 import gc
 import torch
 from faster_whisper import WhisperModel
+from .TranscriptionModel import TranscriptionModel
 from ..config import *
 
 
-class FasterWhisperTranscriptionModel:
+class FasterWhisperTranscriptionModel(TranscriptionModel):
     def __init__(self, model_name: str):
         self.model_name : str = model_name
         self.model : WhisperModel | None = None

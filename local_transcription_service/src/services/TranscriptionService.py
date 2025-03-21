@@ -1,11 +1,11 @@
 import os
 from .AudioSplitter import split_audio
 from .TranscriptionChunk import TranscriptionChunk
-from .TransformerTranscriptionModel import TransformerTranscriptionModel
+from .TranscriptionModel import TranscriptionModel
 
 
 class TranscriptionService:
-    def __init__(self, model: TransformerTranscriptionModel):
+    def __init__(self, model: TranscriptionModel):
         self.model = model
 
     def transcribe(self, file_path, segment_length_ms) -> list[TranscriptionChunk]:

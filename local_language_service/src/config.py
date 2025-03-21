@@ -6,3 +6,4 @@ class AppConfiguration:
     LANGUAGE_MODEL : str = os.getenv("LANGUAGE_MODEL")
     OLLAMA_PORT : int = int(os.getenv("OLLAMA_PORT"))
     OLLAMA_HOST : str = os.getenv("OLLAMA_HOST")
+    LANGUAGE_EMPTY_CHUNK_THRESHOLD_MS: int = int(os.getenv("LANGUAGE_EMPTY_CHUNK_THRESHOLD_MS", "1000"))

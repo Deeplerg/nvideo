@@ -28,6 +28,10 @@ class LanguageService:
         summaries: list[ChunkSummaryResponse] = []
 
         for chunk in chunks:
+            threshold = AppConfiguration.LANGUAGE_EMPTY_CHUNK_THRESHOLD_MS
+            if chunk.end_time_ms - chunk.start_time_ms < threshold:
+                continue
+
             summary = await self.__summarize_chunk(chunk)
             summaries.append(ChunkSummaryResponse(
                 text=summary,

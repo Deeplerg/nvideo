@@ -82,6 +82,8 @@ services:
   local-language-service:
     build: ./local_language_service
     env_file: .env
+    ports:
+      - "8002:8000"
     depends_on:
       - rabbitmq
       - api
@@ -91,11 +93,22 @@ services:
 #  local-graph-service:
 #    build: ./local_graph_service
 #    env_file: .env
+#    ports:
+#      - "8003:8000"
+#    deploy:
+#      resources:
+#        reservations:
+#          devices:
+#            - driver: nvidia
+#              count: 1
+#              capabilities: [ gpu ]
 #    depends_on:
 #      - rabbitmq
 #      - api
 #    networks:
 #      - app-network
+#    volumes:
+#      - local-models:/models
 
 networks:
   app-network:

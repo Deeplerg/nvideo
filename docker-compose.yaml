@@ -21,6 +21,23 @@ services:
     ports:
       - "5432:5432"
 
+  ollama:
+    image: ollama/ollama:0.6.2
+    env_file: .env
+    volumes:
+      - local-models:/root/.ollama
+    networks:
+      - app-network
+    ports:
+      - "11434:11434"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+
   api:
     build: ./api_service
     env_file: .env
@@ -62,14 +79,14 @@ services:
     volumes:
       - local-models:/models
 
-#  local-language-service:
-#    build: ./local_language_service
-#    env_file: .env
-#    depends_on:
-#      - rabbitmq
-#      - api
-#    networks:
-#      - app-network
+  local-language-service:
+    build: ./local_language_service
+    env_file: .env
+    depends_on:
+      - rabbitmq
+      - api
+    networks:
+      - app-network
 
 #  local-graph-service:
 #    build: ./local_graph_service

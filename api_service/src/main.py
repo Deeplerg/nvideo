@@ -51,6 +51,17 @@ async def get_models(
 
     return models
 
+
+def first_specified_model(model_type: str, action_models : list[str]) -> str | None:
+    models = [
+        m for m in action_models
+        if m.startswith(f"{model_type}.")
+    ]
+
+    if not models:
+        return None
+    return models[0]
+
 @app.post("/jobs", response_model=JobResponse)
 async def create_job(
         request: CreateJobRequest,
@@ -63,26 +74,29 @@ async def create_job(
     session.refresh(job)
 
     match job.type:
-        case "transcription":
-            transcription_models = [
-                m for m in job.action_models
-                if m.startswith("transcription.")
-            ]
+        case "transcription" | "summary":
+            transcription_model = first_specified_model("transcription", job.action_models)
 
-            if not transcription_models:
+            if transcription_model is None:
                 raise HTTPException(
                     status_code=400,
                     detail="No valid transcription model specified"
                 )
 
-            model = transcription_models[0]
+            if job.type == "summary":
+                summary_model = first_specified_model("summary", job.action_models)
+                if summary_model is None:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="No valid summary model specified"
+                    )
 
             await broker.publish(TranscriptionRequest(
                 job_id = job.id,
                 video_id = job.video_id
-            ), queue=f"{model}")
+            ), queue=transcription_model)
 
-            logger.info(f"Published {model}, job_id: {job.id}")
+            logger.info(f"Published {transcription_model}, job_id: {job.id}")
 
         case _:
             logger.error(f"Matching job type for {job.type} not found.")
@@ -208,3 +222,62 @@ async def handle_transcription_result(
 
     logger.info(f"Added artifact {artifact.id}")
     logger.info(f"Updated job {job_id} status to {job.status}")
+
+    if job.type == "summary":
+        summary_model = first_specified_model("summary", job.action_models)
+
+        request=SummaryRequest(
+            job_id=job.id,
+            video_id=job.video_id,
+            transcription=body.result
+        )
+
+        await broker.publish(request, queue=summary_model)
+
+        logger.info(f"Published {summary_model}, job_id: {job.id}")
+
+
+@router.subscriber("summary.result")
+async def handle_summary_result(
+        body: SummaryResult,
+        logger: Logger,
+        session: Annotated[Session, Depends(get_session)]
+):
+    job_id = body.job_id
+
+    logger.info(f"Handling summary result for {job_id}...")
+
+    job = session.get(Job, job_id)
+
+    if not job:
+        logger.error(f"Job {job_id} not found in database")
+        return
+
+    artifact = JobArtifact(
+        job_id = job_id,
+        type = "summary",
+        content = [chunk.model_dump() for chunk in body.result]
+    )
+    session.add(artifact)
+
+    if job.type == "summary":
+        job.status = "completed"
+    else:
+        job.status = "summary_finished"
+    session.add(job)
+
+    session.commit()
+    session.refresh(artifact)
+
+    logger.info(f"Added artifact {artifact.id}")
+    logger.info(f"Updated job {job_id} status to {job.status}")
+
+    if job.type == "summary":
+        await broker.publish(JobCompleted(
+            id=job.id,
+            type=job.type,
+            video_id=job.video_id,
+            user_id=job.user_id
+        ), queue=f"job.completed")
+
+        logger.info(f"Job {job.id} completed")

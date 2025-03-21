@@ -17,6 +17,12 @@ class JobResponse(BaseModel):
     status: str
     user_id: int
 
+class JobCompleted(BaseModel):
+    id: UUID
+    type: str
+    video_id: str
+    user_id: int
+
 
 class CreateUserRequest(BaseModel):
     username: str
@@ -53,3 +59,18 @@ class ArtifactResponse(BaseModel):
     job_id: UUID
     type: str
     content: str
+
+
+class SummaryRequest(BaseModel):
+    job_id: UUID
+    video_id: str
+    transcription: list[TranscriptionChunkResult]
+
+class ChunkSummaryResult(BaseModel):
+    text: str
+    start_time_ms: int
+    end_time_ms: int
+
+class SummaryResult(BaseModel):
+    job_id: UUID
+    result: list[ChunkSummaryResult]

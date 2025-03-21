@@ -18,7 +18,7 @@ class AppConfiguration:
     MODEL_THRESHOLD: int = int(os.getenv("MODEL_AVAILABILITY_THRESHOLD", "30"))
 
 
-engine = create_engine(AppConfiguration.DATABASE_URL)
+engine = create_engine(AppConfiguration.DATABASE_URL, client_encoding="utf8")
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
@@ -153,7 +153,13 @@ async def get_artifact(
     artifact = session.get(JobArtifact, artifact_id)
     if not artifact:
         raise HTTPException(status_code=404, detail="Artifact not found")
-    return artifact
+
+    return ArtifactResponse(
+        id=artifact.id,
+        job_id=artifact.job_id,
+        type=artifact.type,
+        content=str(artifact.content)
+    )
 
 
 @app.get("/job/{job_id}/artifacts", response_model=list[ArtifactResponse])
@@ -166,9 +172,17 @@ async def get_job_artifacts(
         raise HTTPException(status_code=404, detail="Job not found")
 
     statement = select(JobArtifact).where(JobArtifact.job_id == job_id)
-    models = session.exec(statement).all()
+    models: list[JobArtifact] = session.exec(statement).all()
 
-    return models
+    return [
+        ArtifactResponse(
+            id=m.id,
+            job_id=m.job_id,
+            type=m.type,
+            content=str(m.content)
+        )
+        for m in models
+    ]
 
 
 @router.subscriber("model.available")

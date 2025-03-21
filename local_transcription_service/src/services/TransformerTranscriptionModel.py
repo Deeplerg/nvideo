@@ -1,10 +1,11 @@
 import gc
 import torch
 from transformers import AutoProcessor, AutoModelForSpeechSeq2Seq, pipeline, AutomaticSpeechRecognitionPipeline
+from .TranscriptionModel import TranscriptionModel
 from ..config import *
 
 
-class TransformerTranscriptionModel:
+class TransformerTranscriptionModel(TranscriptionModel):
     def __init__(self, model_name: str):
         self.model_name : str = model_name
         self.pipe : AutomaticSpeechRecognitionPipeline | None = None

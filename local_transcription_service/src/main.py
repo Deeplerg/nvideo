@@ -33,7 +33,7 @@ def get_faster_whisper_model():
         faster_whisper_model = FasterWhisperTranscriptionModel(AppConfiguration.TRANSCRIPTION_MODEL)
     return faster_whisper_model
 
-def get_transcription_service(model = Depends(get_faster_whisper_model)):
+def get_transcription_service(model = Depends(get_transformer_model)):
     return TranscriptionService(model)
 
 def get_download_service():

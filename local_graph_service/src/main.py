@@ -20,17 +20,34 @@ app = FastAPI()
 app.include_router(router)
 
 
-def get_embedding_service():
-    return EmbeddingService()
+embedding_service: EmbeddingService | None = None
+pca_service: PCAService | None = None
+tsne_service: TSNEService | None = None
+umap_service: UMAPService | None = None
 
-def get_pca_service():
-    return PCAService()
+def get_embedding_service() -> EmbeddingService:
+    global embedding_service
+    if embedding_service is None:
+        embedding_service = EmbeddingService()
+    return embedding_service
 
-def get_tsne_service():
-    return TSNEService
+def get_pca_service() -> PCAService:
+    global pca_service
+    if pca_service is None:
+        pca_service = PCAService()
+    return pca_service
 
-def get_umap_service():
-    return UMAPService()
+def get_tsne_service() -> TSNEService:
+    global tsne_service
+    if tsne_service is None:
+        tsne_service = TSNEService()
+    return tsne_service
+
+def get_umap_service() -> UMAPService:
+    global umap_service
+    if umap_service is None:
+        umap_service = UMAPService()
+    return umap_service
 
 def get_graph_service(
         logger: Logger,

@@ -16,13 +16,11 @@ class LanguageService:
     def __init__(
             self,
             client: AsyncClient,
-            logger: Logger,
-            model_name: str,
-            system_prompt: str):
+            logger: Logger):
         self.__client = client
         self.__logger = logger
-        self.__model_name = model_name
-        self.__system_prompt = system_prompt
+        self.__model_name = AppConfiguration.LANGUAGE_MODEL
+        self.__summary_system_prompt = AppConfiguration.LANGUAGE_SUMMARY_SYSTEM_PROMPT
 
     async def summarize(self, chunks: list[TranscriptionChunkResult]) -> list[ChunkSummaryResponse]:
         summaries: list[ChunkSummaryResponse] = []
@@ -52,12 +50,15 @@ class LanguageService:
     async def __summarize_chunk(self, chunk : TranscriptionChunkResult) -> str:
         start_minutes_seconds = self.__ms_to_minutes_seconds(chunk.start_time_ms)
         end_minutes_seconds = self.__ms_to_minutes_seconds(chunk.end_time_ms)
-        message = f"[Chunk {start_minutes_seconds} - {end_minutes_seconds}]\n" + chunk.text
 
-        response : ChatResponse = await self.__client.chat(model=self.__model_name,
-                                              messages=[
-                                                  {"role": "system", "content": self.__system_prompt},
-                                                  {"role": "user", "content": message}
-                                              ],
-                                              stream=False)
+        message = f"[Chunk {start_minutes_seconds} - {end_minutes_seconds}]\n{chunk.text}"
+
+        response: ChatResponse = await self.__client.chat(
+            model=self.__model_name,
+            messages=[
+                {"role": "system", "content": self.__summary_system_prompt},
+                {"role": "user", "content": message}
+            ],
+            stream=False
+        )
         return response.message.content

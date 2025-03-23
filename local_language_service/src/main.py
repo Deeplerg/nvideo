@@ -41,9 +41,7 @@ def get_language_service(
 ):
     return LanguageService(
         client=client,
-        logger=logger,
-        model_name=AppConfiguration.LANGUAGE_MODEL,
-        system_prompt=AppConfiguration.LANGUAGE_SUMMARY_SYSTEM_PROMPT)
+        logger=logger)
 
 async def pull_model(client: AsyncClient, model: str):
     await client.pull(

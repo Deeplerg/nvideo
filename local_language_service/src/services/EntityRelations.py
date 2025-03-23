@@ -27,5 +27,5 @@ class RelationshipSchema(BaseModel):
     relation_description: str
 
 class EntityRelationsSchema(BaseModel):
-    entities: list[EntitySchema]
-    relationships: list[RelationshipSchema]
+    new_entities: list[EntitySchema]
+    new_relationships: list[RelationshipSchema]

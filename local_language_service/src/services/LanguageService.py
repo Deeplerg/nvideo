@@ -47,15 +47,28 @@ class LanguageService:
     async def generate_entity_relations(self, chunks: list[TranscriptionChunkResult]) -> EntityRelations:
         entities: list[Entity] = []
         relationships: list[Relationship] = []
+        entity_names_set = set()
 
         for chunk in chunks:
             threshold = AppConfiguration.LANGUAGE_EMPTY_CHUNK_THRESHOLD_MS
             if chunk.end_time_ms - chunk.start_time_ms < threshold:
                 continue
 
-            entity_relations_chunk = await self.__extract_entity_relations_chunk(chunk)
+            entity_relations_chunk = await self.__extract_entity_relations_chunk(
+                chunk=chunk,
+                existing_entity_relations=EntityRelations(
+                    entities=entities,
+                    relationships=relationships
+                )
+            )
 
-            entities.extend(entity_relations_chunk.entities)
+            new_entities = []
+            for entity in entity_relations_chunk.entities:
+                if entity.name not in entity_names_set:
+                    entity_names_set.add(entity.name)
+                    new_entities.append(entity)
+
+            entities.extend(new_entities)
             relationships.extend(entity_relations_chunk.relationships)
 
             self.__logger.info(
@@ -64,24 +77,23 @@ class LanguageService:
                 f"chunk at {chunk.start_time_ms}"
             )
 
-            entity_names = [entity.name for entity in entities]
-
             for rel in relationships:
                 entity_name: str | None = None
-                if rel.source_entity not in entity_names:
+                if rel.source_entity not in entity_names_set:
                     entity_name = rel.source_entity
-                if rel.target_entity not in entity_names:
+                if rel.target_entity not in entity_names_set:
                     entity_name = rel.target_entity
 
                 if entity_name is None:
                     continue
 
-                entities.append(
-                    Entity(
-                        name=entity_name,
-                        chunk_start_time_ms=chunk.start_time_ms,
-                        chunk_end_time_ms=chunk.end_time_ms
-                    ))
+                entity = Entity(
+                    name=entity_name,
+                    chunk_start_time_ms=chunk.start_time_ms,
+                    chunk_end_time_ms=chunk.end_time_ms
+                )
+                entity_names_set.add(entity.name)
+                entities.append(entity)
 
         return EntityRelations(entities=entities, relationships=relationships)
 
@@ -107,18 +119,25 @@ class LanguageService:
         )
         return response.message.content
 
-    async def __extract_entity_relations_chunk(self, chunk: TranscriptionChunkResult) -> EntityRelations:
+    async def __extract_entity_relations_chunk(
+            self,
+            chunk: TranscriptionChunkResult,
+            existing_entity_relations: EntityRelations
+    ) -> EntityRelations:
         start_minutes_seconds = self.__ms_to_minutes_seconds(chunk.start_time_ms)
         end_minutes_seconds = self.__ms_to_minutes_seconds(chunk.end_time_ms)
 
-        message = f"[Chunk {start_minutes_seconds} - {end_minutes_seconds}]\n{chunk.text}"
+        existing_entity_relations_json = existing_entity_relations.model_dump_json(indent=2)
+        existing_entity_relations_prompt = f"[Existing entities and relations]\n{existing_entity_relations_json}"
+        transcript_prompt = f"[Chunk {start_minutes_seconds} - {end_minutes_seconds}]\n{chunk.text}"
         schema = EntityRelationsSchema.model_json_schema()
 
         response: ChatResponse = await self.__client.chat(
             model=self.__model_name,
             messages=[
                 {"role": "system", "content": self.__entity_system_prompt},
-                {"role": "user", "content": message}
+                {"role": "user", "content": existing_entity_relations_prompt},
+                {"role": "user", "content": transcript_prompt}
             ],
             stream=False,
             format=schema
@@ -134,7 +153,7 @@ class LanguageService:
                 chunk_start_time_ms=chunk.start_time_ms,
                 chunk_end_time_ms=chunk.end_time_ms
             )
-            for entity in result.get("entities", [])
+            for entity in result.get("new_entities", [])
         ]
 
         relationships = [
@@ -145,7 +164,7 @@ class LanguageService:
                 chunk_start_time_ms=chunk.start_time_ms,
                 chunk_end_time_ms=chunk.end_time_ms
             )
-            for rel in result.get("relationships", [])
+            for rel in result.get("new_relationships", [])
         ]
 
         return EntityRelations(

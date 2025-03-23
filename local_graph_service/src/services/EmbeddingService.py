@@ -15,10 +15,11 @@ class EmbeddingService:
     def __load(self):
         device = "cuda" if torch.cuda.is_available() else "cpu"
         model_name = AppConfiguration.GRAPH_EMBED_MODEL
+        cache_dir = AppConfiguration.GRAPH_EMBED_MODEL_DIR
         self.__model = SentenceTransformer(
             model_name,
             device=device,
-            cache_folder="/models"
+            cache_folder=cache_dir
         )
 
     def unload(self):

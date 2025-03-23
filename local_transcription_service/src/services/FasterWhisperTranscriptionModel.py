@@ -21,7 +21,10 @@ class FasterWhisperTranscriptionModel(TranscriptionModel):
         cuda_available = torch.cuda.is_available()
 
         device = "cuda" if cuda_available else "cpu"
-        compute_type = "int8_float16" if cuda_available else "int8"
+
+        # https://opennmt.net/CTranslate2/quantization.html
+        # "By default, the runtime tries to use the type that is saved in the converted model as the computation type."
+        #compute_type = "float16" if cuda_available else "float32"
 
         cache_dir = AppConfiguration.TRANSCRIPTION_MODEL_DIR
 
@@ -29,7 +32,7 @@ class FasterWhisperTranscriptionModel(TranscriptionModel):
             model_size_or_path=self.model_name,
             download_root=cache_dir,
             device=device,
-            compute_type=compute_type
+            #compute_type=compute_type
         )
 
     def unload(self):

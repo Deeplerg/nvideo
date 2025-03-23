@@ -1,8 +1,4 @@
-﻿import os
-from contextlib import asynccontextmanager
-
-import ollama
-from fastapi import FastAPI, Depends, BackgroundTasks
+﻿from fastapi import FastAPI, Depends
 from fastapi_utils.tasks import repeat_every
 from faststream.rabbit import RabbitBroker
 from faststream.rabbit.fastapi import RabbitRouter, Logger
@@ -61,9 +57,10 @@ async def startup(app: FastAPI):
 
 @repeat_every(seconds=10)
 async def publish_available_models():
-    language_model_name = AppConfiguration.LANGUAGE_MODEL.split(':')[0]
-
-    models = [ f"summary.local-{language_model_name}" ]
+    models = [
+        f"summary.local-{language_model_name}",
+        f"entity-relation.local-{language_model_name}"
+    ]
 
     for model in models:
         await broker.publish(ModelAvailable(
@@ -97,3 +94,23 @@ async def summarize_local(
     )
 
     await broker.publish(result, queue="summary.result")
+
+@router.subscriber(f"entity-relation.local-{language_model_name}")
+async def entity_local(
+        body : EntityRelationRequest,
+        logger: Logger,
+        language: LanguageService = Depends(get_language_service)
+):
+    logger.info(f"Handling entity-relation request for {body.video_id}...")
+
+    entity_relations = await language.generate_entity_relations(body.transcription)
+    logger.info(f"Generated entity-relations for video {body.video_id}")
+
+    result=EntityRelationResult.from_entity_relations(entity_relations)
+
+    response=EntityRelationResponse(
+        job_id=body.job_id,
+        result=result
+    )
+
+    await broker.publish(response, queue="entity-relation.result")

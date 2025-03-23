@@ -1,8 +1,10 @@
+import json
 from dataclasses import dataclass
 from logging import Logger
 
 from ollama import ChatResponse, AsyncClient
 
+from .EntityRelations import EntityRelations, Entity, Relationship, EntityRelationsSchema
 from ..config import AppConfiguration
 from ..models import TranscriptionChunkResult
 
@@ -21,6 +23,7 @@ class LanguageService:
         self.__logger = logger
         self.__model_name = AppConfiguration.LANGUAGE_MODEL
         self.__summary_system_prompt = AppConfiguration.LANGUAGE_SUMMARY_SYSTEM_PROMPT
+        self.__entity_system_prompt = AppConfiguration.LANGUAGE_ENTITY_SYSTEM_PROMPT
 
     async def summarize(self, chunks: list[TranscriptionChunkResult]) -> list[ChunkSummaryResponse]:
         summaries: list[ChunkSummaryResponse] = []
@@ -40,6 +43,47 @@ class LanguageService:
                 f"Summarized chunk at {chunk.start_time_ms}, summary length: {len(summary)}")
 
         return summaries
+
+    async def generate_entity_relations(self, chunks: list[TranscriptionChunkResult]) -> EntityRelations:
+        entities: list[Entity] = []
+        relationships: list[Relationship] = []
+
+        for chunk in chunks:
+            threshold = AppConfiguration.LANGUAGE_EMPTY_CHUNK_THRESHOLD_MS
+            if chunk.end_time_ms - chunk.start_time_ms < threshold:
+                continue
+
+            entity_relations_chunk = await self.__extract_entity_relations_chunk(chunk)
+
+            entities.extend(entity_relations_chunk.entities)
+            relationships.extend(entity_relations_chunk.relationships)
+
+            self.__logger.info(
+                f"Extracted {len(entity_relations_chunk.entities)} entities and "
+                f"{len(entity_relations_chunk.relationships)} relationships from "
+                f"chunk at {chunk.start_time_ms}"
+            )
+
+            entity_names = [entity.name for entity in entities]
+
+            for rel in relationships:
+                entity_name: str | None = None
+                if rel.source_entity not in entity_names:
+                    entity_name = rel.source_entity
+                if rel.target_entity not in entity_names:
+                    entity_name = rel.target_entity
+
+                if entity_name is None:
+                    continue
+
+                entities.append(
+                    Entity(
+                        name=entity_name,
+                        chunk_start_time_ms=chunk.start_time_ms,
+                        chunk_end_time_ms=chunk.end_time_ms
+                    ))
+
+        return EntityRelations(entities=entities, relationships=relationships)
 
     def __ms_to_minutes_seconds(self, ms) -> str:
         seconds = ms // 1000
@@ -62,3 +106,49 @@ class LanguageService:
             stream=False
         )
         return response.message.content
+
+    async def __extract_entity_relations_chunk(self, chunk: TranscriptionChunkResult) -> EntityRelations:
+        start_minutes_seconds = self.__ms_to_minutes_seconds(chunk.start_time_ms)
+        end_minutes_seconds = self.__ms_to_minutes_seconds(chunk.end_time_ms)
+
+        message = f"[Chunk {start_minutes_seconds} - {end_minutes_seconds}]\n{chunk.text}"
+        schema = EntityRelationsSchema.model_json_schema()
+
+        response: ChatResponse = await self.__client.chat(
+            model=self.__model_name,
+            messages=[
+                {"role": "system", "content": self.__entity_system_prompt},
+                {"role": "user", "content": message}
+            ],
+            stream=False,
+            format=schema
+        )
+
+        self.__logger.info(response.message.content)
+
+        result: dict = json.loads(response.message.content)
+
+        entities = [
+            Entity(
+                name=entity["name"],
+                chunk_start_time_ms=chunk.start_time_ms,
+                chunk_end_time_ms=chunk.end_time_ms
+            )
+            for entity in result.get("entities", [])
+        ]
+
+        relationships = [
+            Relationship(
+                source_entity=rel["source_entity"],
+                target_entity=rel["target_entity"],
+                relation_description=rel["relation_description"],
+                chunk_start_time_ms=chunk.start_time_ms,
+                chunk_end_time_ms=chunk.end_time_ms
+            )
+            for rel in result.get("relationships", [])
+        ]
+
+        return EntityRelations(
+            entities=entities,
+            relationships=relationships
+        )

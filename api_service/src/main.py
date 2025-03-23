@@ -62,6 +62,15 @@ def first_specified_model(model_type: str, action_models : list[str]) -> str | N
         return None
     return models[0]
 
+def find_model_or_raise(model_type: str, action_models: list[str]) -> str:
+    model = first_specified_model(model_type, action_models)
+    if model is None:
+        raise HTTPException(
+            status_code=400,
+            detail=f"No valid {model_type} model specified"
+        )
+    return model
+
 @app.post("/jobs", response_model=JobResponse)
 async def create_job(
         request: CreateJobRequest,
@@ -74,22 +83,14 @@ async def create_job(
     session.refresh(job)
 
     match job.type:
-        case "transcription" | "summary":
-            transcription_model = first_specified_model("transcription", job.action_models)
+        case "transcription" | "summary" | "graph":
+            transcription_model = find_model_or_raise("transcription", job.action_models)
 
-            if transcription_model is None:
-                raise HTTPException(
-                    status_code=400,
-                    detail="No valid transcription model specified"
-                )
+            if job.type != "transcription":
+                find_model_or_raise(job.type, job.action_models)
 
-            if job.type == "summary":
-                summary_model = first_specified_model("summary", job.action_models)
-                if summary_model is None:
-                    raise HTTPException(
-                        status_code=400,
-                        detail="No valid summary model specified"
-                    )
+            if job.type == "graph":
+                find_model_or_raise("entity-relation", job.action_models)
 
             await broker.publish(TranscriptionRequest(
                 job_id = job.id,
@@ -237,18 +238,37 @@ async def handle_transcription_result(
     logger.info(f"Added artifact {artifact.id}")
     logger.info(f"Updated job {job_id} status to {job.status}")
 
-    if job.type == "summary":
-        summary_model = first_specified_model("summary", job.action_models)
+    match job.type:
+        case "summary":
+            model = first_specified_model(
+                model_type="summary",
+                action_models=job.action_models)
 
-        request=SummaryRequest(
-            job_id=job.id,
-            video_id=job.video_id,
-            transcription=body.result
-        )
+            request=SummaryRequest(
+                job_id=job.id,
+                video_id=job.video_id,
+                transcription=body.result
+            )
 
-        await broker.publish(request, queue=summary_model)
+            await broker.publish(request, queue=model)
+            logger.info(f"Published {model}, job_id: {job.id}")
 
-        logger.info(f"Published {summary_model}, job_id: {job.id}")
+        case "graph":
+            model = first_specified_model(
+                model_type="entity-relation",
+                action_models=job.action_models)
+
+            request = EntityRelationRequest(
+                job_id=job.id,
+                video_id=job.video_id,
+                transcription=body.result
+            )
+
+            await broker.publish(request, queue=model)
+            logger.info(f"Published {model}, job_id: {job.id}")
+
+        case _:
+            return
 
 
 @router.subscriber("summary.result")
@@ -295,3 +315,88 @@ async def handle_summary_result(
         ), queue=f"job.completed")
 
         logger.info(f"Job {job.id} completed")
+
+@router.subscriber("entity-relation.result")
+async def handle_entity_relation_result(
+        body: EntityRelationResponse,
+        logger: Logger,
+        session: Annotated[Session, Depends(get_session)]
+):
+    job_id = body.job_id
+
+    logger.info(f"Handling entity-relation result for {job_id}...")
+
+    job = session.get(Job, job_id)
+
+    if not job:
+        logger.error(f"Job {job_id} not found in database")
+        return
+
+    artifact = JobArtifact(
+        job_id = job_id,
+        type = "entity-relation",
+        content = body.result.model_dump()
+    )
+    session.add(artifact)
+
+    job.status = "entity-relation_finished"
+    session.add(job)
+
+    session.commit()
+    session.refresh(artifact)
+
+    logger.info(f"Added artifact {artifact.id}")
+    logger.info(f"Updated job {job_id} status to {job.status}")
+
+    model = first_specified_model(
+        model_type="graph",
+        action_models=job.action_models)
+
+    await broker.publish(GraphRequest(
+        job_id=job.id,
+        video_id=job.video_id,
+        entity_relations=body.result
+    ), queue=model)
+
+    logger.info(f"Published {model}, job_id: {job.id}")
+
+@router.subscriber("graph.result")
+async def handle_graph_result(
+        body: GraphResponse,
+        logger: Logger,
+        session: Annotated[Session, Depends(get_session)]
+):
+    job_id = body.job_id
+
+    logger.info(f"Handling graph result for {job_id}...")
+
+    job = session.get(Job, job_id)
+
+    if not job:
+        logger.error(f"Job {job_id} not found in database")
+        return
+
+    artifact = JobArtifact(
+        job_id = job_id,
+        type = "graph",
+        content = body.result.model_dump()
+    )
+    session.add(artifact)
+
+    job.status = "completed"
+    session.add(job)
+
+    session.commit()
+    session.refresh(artifact)
+
+    logger.info(f"Added artifact {artifact.id}")
+    logger.info(f"Updated job {job_id} status to {job.status}")
+
+    await broker.publish(JobCompleted(
+        id=job.id,
+        type=job.type,
+        video_id=job.video_id,
+        user_id=job.user_id
+    ), queue=f"job.completed")
+
+    logger.info(f"Job {job.id} completed")

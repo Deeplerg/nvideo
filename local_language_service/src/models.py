@@ -8,7 +8,7 @@ class TranscriptionChunkResult(BaseModel):
     start_time_ms: int
     end_time_ms: int
 
-class TranscriptionResult(BaseModel):
+class TranscriptionResponse(BaseModel):
     job_id: UUID
     result: list[TranscriptionChunkResult]
 
@@ -23,7 +23,7 @@ class ChunkSummaryResult(BaseModel):
     start_time_ms: int
     end_time_ms: int
 
-class SummaryResult(BaseModel):
+class SummaryResponse(BaseModel):
     job_id: UUID
     result: list[ChunkSummaryResult]
 

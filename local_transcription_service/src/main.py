@@ -91,12 +91,12 @@ async def transcribe_local_whisper(
     chunks = transcription.transcribe(path, segment_length_ms)
     logger.info(f"Transcribed video {body.video_id}")
 
-    result=TranscriptionResult(
+    response=TranscriptionResponse(
         job_id = body.job_id,
         result = convert_to_chunk_results(chunks)
     )
 
-    await broker.publish(result, queue="transcription.result")
+    await broker.publish(response, queue="transcription.result")
 
     if os.path.exists(path):
         os.remove(path)

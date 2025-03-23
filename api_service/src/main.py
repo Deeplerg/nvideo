@@ -208,7 +208,7 @@ async def handle_model_available(
 
 @router.subscriber("transcription.result")
 async def handle_transcription_result(
-        body: TranscriptionResult,
+        body: TranscriptionResponse,
         logger: Logger,
         session: Annotated[Session, Depends(get_session)]
 ):
@@ -273,7 +273,7 @@ async def handle_transcription_result(
 
 @router.subscriber("summary.result")
 async def handle_summary_result(
-        body: SummaryResult,
+        body: SummaryResponse,
         logger: Logger,
         session: Annotated[Session, Depends(get_session)]
 ):

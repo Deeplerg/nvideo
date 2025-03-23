@@ -88,12 +88,12 @@ async def summarize_local(
     chunks = await language.summarize(body.transcription)
     logger.info(f"Summarized video {body.video_id}")
 
-    result=SummaryResult(
+    response=SummaryResponse(
         job_id = body.job_id,
         result = convert_to_chunk_results(chunks)
     )
 
-    await broker.publish(result, queue="summary.result")
+    await broker.publish(response, queue="summary.result")
 
 @router.subscriber(f"entity-relation.local-{language_model_name}")
 async def entity_local(

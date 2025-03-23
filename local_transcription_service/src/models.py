@@ -11,7 +11,7 @@ class TranscriptionChunkResult(BaseModel):
     start_time_ms: int
     end_time_ms: int
 
-class TranscriptionResult(BaseModel):
+class TranscriptionResponse(BaseModel):
     job_id: UUID
     result: list[TranscriptionChunkResult]
 

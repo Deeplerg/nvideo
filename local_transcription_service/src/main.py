@@ -6,6 +6,7 @@ from faststream.rabbit import RabbitBroker
 from faststream.rabbit.fastapi import RabbitRouter, Logger
 from .services.DownloadService import DownloadService
 from .services.TranscriptionChunk import TranscriptionChunk
+from .services.TranscriptionModel import TranscriptionModel
 from .services.TranscriptionService import TranscriptionService
 from .services.TransformerTranscriptionModel import TransformerTranscriptionModel
 from .services.FasterWhisperTranscriptionModel import FasterWhisperTranscriptionModel
@@ -21,19 +22,28 @@ app.include_router(router)
 transformer_model : TransformerTranscriptionModel | None = None
 faster_whisper_model : FasterWhisperTranscriptionModel | None = None
 
-def get_transformer_model():
+def get_transformer_model() -> TransformerTranscriptionModel:
     global transformer_model
     if transformer_model is None:
         transformer_model = TransformerTranscriptionModel(AppConfiguration.TRANSCRIPTION_MODEL)
     return transformer_model
 
-def get_faster_whisper_model():
+def get_faster_whisper_model() -> FasterWhisperTranscriptionModel:
     global faster_whisper_model
     if faster_whisper_model is None:
         faster_whisper_model = FasterWhisperTranscriptionModel(AppConfiguration.TRANSCRIPTION_MODEL)
     return faster_whisper_model
 
-def get_transcription_service(model = Depends(get_transformer_model)):
+def get_transcription_service():
+    model: TranscriptionModel
+    match AppConfiguration.TRANSCRIPTION_LIBRARY:
+        case "transformers":
+            model = get_transformer_model()
+        case "faster_whisper":
+            model = get_faster_whisper_model()
+        case _:
+            model = get_transformer_model()
+
     return TranscriptionService(model)
 
 def get_download_service():

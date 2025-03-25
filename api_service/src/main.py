@@ -33,8 +33,8 @@ async def lifespan(app: FastAPI):
     await broker.start()
     yield
 
-router = RabbitRouter(AppConfiguration.AMQP_URL)
-broker = RabbitBroker(AppConfiguration.AMQP_URL)
+router = RabbitRouter(AppConfiguration.AMQP_URL, fail_fast=False)
+broker = RabbitBroker(AppConfiguration.AMQP_URL, fail_fast=False)
 app = FastAPI(lifespan=lifespan)
 app.include_router(router)
 

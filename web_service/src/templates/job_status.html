@@ -190,7 +190,7 @@
              } else {
                  finalResultSection.style.display = 'none';
              }
-             const intermediateStatuses = ['transcription_finished', 'summary_finished', 'entity-relation_finished'];
+             const intermediateStatuses = ['transcription_finished', 'summary_finished', 'entity-relation_finished', 'completed'];
              if (intermediateStatuses.includes(status) && status !== initialStatus) {
                  if (!window.reloadPending) {
                      window.reloadPending = true;

@@ -4,10 +4,10 @@
 <h1 class="title">Добро пожаловать в nvideo</h1>
 
 {% if message %}
-    <div class="notification is-success is-light">{{ message }}</div>
+<div class="notification is-success is-light">{{ message }}</div>
 {% endif %}
 {% if error %}
-    <div class="notification is-danger is-light">{{ error }}</div>
+<div class="notification is-danger is-light">{{ error }}</div>
 {% endif %}
 
 <div class="columns">
@@ -18,7 +18,8 @@
                 <div class="field">
                     <label class="label" for="reg-username">Имя пользователя</label>
                     <div class="control">
-                        <input id="reg-username" class="input" type="text" name="username" placeholder="Введите имя пользователя" required>
+                        <input id="reg-username" class="input" type="text" name="username"
+                               placeholder="Введите имя пользователя" required>
                     </div>
                 </div>
                 <div class="field">
@@ -31,13 +32,14 @@
     </div>
 
     <div class="column is-half">
-         <div class="box">
+        <div class="box">
             <h2 class="subtitle">Вход</h2>
             <form method="post" action="{{ url_for('login_user') }}">
                 <div class="field">
                     <label class="label" for="login-username">Имя пользователя</label>
                     <div class="control">
-                        <input id="login-username" class="input" type="text" name="username" placeholder="Введите имя пользователя" required>
+                        <input id="login-username" class="input" type="text" name="username"
+                               placeholder="Введите имя пользователя" required>
                     </div>
                 </div>
                 <div class="field">
@@ -74,9 +76,11 @@
         <div class="field">
             <label class="label" for="video-id-input">ID видео YouTube</label>
             <div class="control">
-                <input id="video-id-input" class="input" type="text" name="video_id" placeholder="Пример: dQw4w9WgXcQ" required>
+                <input id="video-id-input" class="input" type="text" name="video_id" placeholder="Пример: dQw4w9WgXcQ"
+                       required>
             </div>
-            <p class="help">Введите только ID видео, например, 'dQw4w9WgXcQ' из ссылки 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'.</p>
+            <p class="help">Введите только ID видео, например, 'dQw4w9WgXcQ' из ссылки
+                'https://www.youtube.com/watch?v=dQw4w9WgXcQ'.</p>
         </div>
 
         <!-- Model Selection Sections -->
@@ -84,14 +88,14 @@
             <label class="label">Модель транскрипции</label>
             <div class="control">
                 {% if model_map.transcription %}
-                    {% for model in model_map.transcription %}
-                    <label class="radio">
-                        <input type="radio" name="transcription_model" value="{{ model.value }}">
-                        {{ model.name }}
-                    </label><br>
-                    {% endfor %}
+                {% for model in model_map.transcription %}
+                <label class="radio">
+                    <input type="radio" name="transcription_model" value="{{ model.value }}">
+                    {{ model.name }}
+                </label><br>
+                {% endfor %}
                 {% else %}
-                    <p class="has-text-danger">Нет доступных моделей транскрипции.</p>
+                <p class="has-text-danger">Нет доступных моделей транскрипции.</p>
                 {% endif %}
             </div>
         </div>
@@ -99,48 +103,48 @@
         <div class="field model-selection" id="model-selection-summary" style="display:none;">
             <label class="label">Модель суммаризации</label>
             <div class="control">
-                 {% if model_map.summary %}
-                    {% for model in model_map.summary %}
-                    <label class="radio">
-                        <input type="radio" name="summary_model" value="{{ model.value }}">
-                        {{ model.name }}
-                    </label><br>
-                    {% endfor %}
-                 {% else %}
-                    <p class="has-text-danger">Нет доступных моделей суммаризации.</p>
-                 {% endif %}
+                {% if model_map.summary %}
+                {% for model in model_map.summary %}
+                <label class="radio">
+                    <input type="radio" name="summary_model" value="{{ model.value }}">
+                    {{ model.name }}
+                </label><br>
+                {% endfor %}
+                {% else %}
+                <p class="has-text-danger">Нет доступных моделей суммаризации.</p>
+                {% endif %}
             </div>
         </div>
 
-         <div class="field model-selection" id="model-selection-entity-relation" style="display:none;">
-             <label class="label">Модель извлечения сущностей</label>
-             <div class="control">
-                 {% if model_map['entity-relation'] %}
-                    {% for model in model_map['entity-relation'] %}
-                    <label class="radio">
-                        <input type="radio" name="entity_relation_model" value="{{ model.value }}">
-                        {{ model.name }}
-                    </label><br>
-                    {% endfor %}
-                 {% else %}
-                    <p class="has-text-danger">Нет доступных моделей извлечения сущностей.</p>
-                 {% endif %}
-             </div>
-         </div>
+        <div class="field model-selection" id="model-selection-entity-relation" style="display:none;">
+            <label class="label">Модель извлечения сущностей</label>
+            <div class="control">
+                {% if model_map['entity-relation'] %}
+                {% for model in model_map['entity-relation'] %}
+                <label class="radio">
+                    <input type="radio" name="entity_relation_model" value="{{ model.value }}">
+                    {{ model.name }}
+                </label><br>
+                {% endfor %}
+                {% else %}
+                <p class="has-text-danger">Нет доступных моделей извлечения сущностей.</p>
+                {% endif %}
+            </div>
+        </div>
 
-         <div class="field model-selection" id="model-selection-graph" style="display:none;">
+        <div class="field model-selection" id="model-selection-graph" style="display:none;">
             <label class="label">Модель Построения Графа</label>
             <div class="control">
-                 {% if model_map.graph %}
-                    {% for model in model_map.graph %}
-                    <label class="radio">
-                        <input type="radio" name="graph_model" value="{{ model.value }}">
-                        {{ model.name }}
-                    </label><br>
-                    {% endfor %}
-                 {% else %}
-                    <p class="has-text-danger">Нет доступных моделей построения графа.</p>
-                 {% endif %}
+                {% if model_map.graph %}
+                {% for model in model_map.graph %}
+                <label class="radio">
+                    <input type="radio" name="graph_model" value="{{ model.value }}">
+                    {{ model.name }}
+                </label><br>
+                {% endfor %}
+                {% else %}
+                <p class="has-text-danger">Нет доступных моделей построения графа.</p>
+                {% endif %}
             </div>
         </div>
         <!-- End Model Selection -->
@@ -157,7 +161,7 @@
 
 {% block scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const jobTypeSelect = document.getElementById('job-type-select');
         const modelSections = {
             transcription: document.getElementById('model-selection-transcription'),
@@ -170,7 +174,9 @@
             const jobType = jobTypeSelect.value;
 
             // Hide all model sections first
-            Object.values(modelSections).forEach(el => { if(el) el.style.display = 'none'; });
+            Object.values(modelSections).forEach(el => {
+                if (el) el.style.display = 'none';
+            });
             // Disable all radio buttons initially
             document.querySelectorAll('.model-selection input[type="radio"]').forEach(radio => radio.disabled = true);
 
@@ -182,27 +188,27 @@
                     modelSections.transcription.querySelectorAll('input[type="radio"]').forEach(radio => radio.disabled = false);
                 }
             } else if (jobType === 'summary') {
-                 if (modelSections.transcription) {
-                     modelSections.transcription.style.display = 'block';
-                     modelSections.transcription.querySelectorAll('input[type="radio"]').forEach(radio => radio.disabled = false);
-                 }
-                 if (modelSections.summary) {
+                if (modelSections.transcription) {
+                    modelSections.transcription.style.display = 'block';
+                    modelSections.transcription.querySelectorAll('input[type="radio"]').forEach(radio => radio.disabled = false);
+                }
+                if (modelSections.summary) {
                     modelSections.summary.style.display = 'block';
                     modelSections.summary.querySelectorAll('input[type="radio"]').forEach(radio => radio.disabled = false);
-                 }
+                }
             } else if (jobType === 'graph') {
-                 if (modelSections.transcription) {
-                     modelSections.transcription.style.display = 'block';
-                     modelSections.transcription.querySelectorAll('input[type="radio"]').forEach(radio => radio.disabled = false);
-                 }
-                 if (modelSections.entityRelation) { // Require entity relation for graph
-                     modelSections.entityRelation.style.display = 'block';
-                     modelSections.entityRelation.querySelectorAll('input[type="radio"]').forEach(radio => radio.disabled = false);
-                 }
-                 if (modelSections.graph) {
+                if (modelSections.transcription) {
+                    modelSections.transcription.style.display = 'block';
+                    modelSections.transcription.querySelectorAll('input[type="radio"]').forEach(radio => radio.disabled = false);
+                }
+                if (modelSections.entityRelation) { // Require entity relation for graph
+                    modelSections.entityRelation.style.display = 'block';
+                    modelSections.entityRelation.querySelectorAll('input[type="radio"]').forEach(radio => radio.disabled = false);
+                }
+                if (modelSections.graph) {
                     modelSections.graph.style.display = 'block';
                     modelSections.graph.querySelectorAll('input[type="radio"]').forEach(radio => radio.disabled = false);
-                 }
+                }
             }
         }
 

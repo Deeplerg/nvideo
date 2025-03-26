@@ -7,9 +7,9 @@
     <div class="level">
         <div class="level-left">
             <div>
-                <p><strong>ID Задания:</strong> {{ job.id }}</p>
+                <p><strong>ID задания:</strong> {{ job.id }}</p>
                 <p><strong>Тип:</strong> {{ job.type }}</p>
-                <p><strong>Видео ID:</strong>
+                <p><strong>ID видео:</strong>
                     <a href="{{ utils.generate_youtube_link(job.video_id, 0) }}" target="_blank">{{ job.video_id }}</a>
                 </p>
             </div>
@@ -65,7 +65,7 @@
 </div>
 
 <div id="intermediate-artifacts-section" class="box">
-    <h2 class="subtitle">Детализация / Промежуточные результаты</h2>
+    <h2 class="subtitle">Промежуточные результаты</h2>
     {% if artifacts.transcription and job.type != 'transcription' %}
     <div class="accordion-item">
         <div class="accordion-header" data-target="transcription-content"> Транскрипция <span class="icon is-small"><i class="fas fa-chevron-down"></i></span> </div>

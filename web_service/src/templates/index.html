@@ -42,7 +42,7 @@
                 </div>
                 <div class="field">
                     <div class="control">
-                        <button class="button is-success" type="submit">Войти</button>
+                        <button class="button is-primary" type="submit">Войти</button>
                     </div>
                 </div>
             </form>
@@ -53,7 +53,7 @@
 {% if user_id %}
 <hr>
 <div class="box">
-    <h2 class="subtitle">Создать новое задание (Пользователь ID: {{ user_id }})</h2>
+    <h2 class="subtitle">Создать новое задание (ID пользователя: {{ user_id }})</h2>
     <form method="post" action="{{ url_for('create_job') }}" id="create-job-form">
         <input type="hidden" name="user_id" value="{{ user_id }}">
 
@@ -72,7 +72,7 @@
         </div>
 
         <div class="field">
-            <label class="label" for="video-id-input">ID Видео YouTube</label>
+            <label class="label" for="video-id-input">ID видео YouTube</label>
             <div class="control">
                 <input id="video-id-input" class="input" type="text" name="video_id" placeholder="Пример: dQw4w9WgXcQ" required>
             </div>
@@ -81,7 +81,7 @@
 
         <!-- Model Selection Sections -->
         <div class="field model-selection" id="model-selection-transcription" style="display:none;">
-            <label class="label">Модель Транскрипции</label>
+            <label class="label">Модель транскрипции</label>
             <div class="control">
                 {% if model_map.transcription %}
                     {% for model in model_map.transcription %}
@@ -97,7 +97,7 @@
         </div>
 
         <div class="field model-selection" id="model-selection-summary" style="display:none;">
-            <label class="label">Модель Суммаризации</label>
+            <label class="label">Модель суммаризации</label>
             <div class="control">
                  {% if model_map.summary %}
                     {% for model in model_map.summary %}
@@ -113,7 +113,7 @@
         </div>
 
          <div class="field model-selection" id="model-selection-entity-relation" style="display:none;">
-             <label class="label">Модель Извлечения Сущностей (Entity-Relation)</label>
+             <label class="label">Модель извлечения сущностей</label>
              <div class="control">
                  {% if model_map['entity-relation'] %}
                     {% for model in model_map['entity-relation'] %}

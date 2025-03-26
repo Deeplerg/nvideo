@@ -39,6 +39,14 @@ app = FastAPI(lifespan=lifespan)
 app.include_router(router)
 
 
+async def publish_job_updated(job: Job):
+    await broker.publish(JobStatusUpdated(
+        id=job.id,
+        video_id=job.video_id,
+        user_id=job.user_id,
+        status=job.status
+    ), queue="job.status_updated")
+
 @app.get("/models/available", response_model=list[AvailableModelResponse])
 async def get_models(
         session: Annotated[Session, Depends(get_session)]
@@ -135,6 +143,17 @@ async def get_user(
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
+@app.get("/user/by-name/{name}", response_model=UserResponse)
+async def get_user_by_name(
+    name: str,
+    session: Annotated[Session, Depends(get_session)]
+):
+    statement = select(User).where(User.username == name)
+    user = session.exec(statement).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
 
 @app.get("/user/{user_id}/jobs", response_model=list[JobResponse])
 async def get_user_jobs(
@@ -159,7 +178,7 @@ async def get_artifact(
         id=artifact.id,
         job_id=artifact.job_id,
         type=artifact.type,
-        content=str(artifact.content)
+        content=artifact.content
     )
 
 
@@ -180,7 +199,7 @@ async def get_job_artifacts(
             id=m.id,
             job_id=m.job_id,
             type=m.type,
-            content=str(m.content)
+            content=m.content
         )
         for m in models
     ]
@@ -237,6 +256,8 @@ async def handle_transcription_result(
 
     logger.info(f"Added artifact {artifact.id}")
     logger.info(f"Updated job {job_id} status to {job.status}")
+
+    await publish_job_updated(job)
 
     match job.type:
         case "summary":
@@ -306,6 +327,8 @@ async def handle_summary_result(
     logger.info(f"Added artifact {artifact.id}")
     logger.info(f"Updated job {job_id} status to {job.status}")
 
+    await publish_job_updated(job)
+
     if job.type == "summary":
         await broker.publish(JobCompleted(
             id=job.id,
@@ -347,6 +370,8 @@ async def handle_entity_relation_result(
 
     logger.info(f"Added artifact {artifact.id}")
     logger.info(f"Updated job {job_id} status to {job.status}")
+
+    await publish_job_updated(job)
 
     model = first_specified_model(
         model_type="graph",
@@ -391,6 +416,8 @@ async def handle_graph_result(
 
     logger.info(f"Added artifact {artifact.id}")
     logger.info(f"Updated job {job_id} status to {job.status}")
+
+    await publish_job_updated(job)
 
     await broker.publish(JobCompleted(
         id=job.id,

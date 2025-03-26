@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="title">Job Status</h1>
+
+<div class="box">
+    <p><strong>Job ID:</strong> {{ job.id }}</p>
+    <p><strong>Job Type:</strong> {{ job.type }}</p>
+    <p><strong>Video ID:</strong> {{ job.video_id }}</p>
+    <p><strong>Status:</strong> <span id="job-status">{{ job.status }}</span></p>
+</div>
+
+<div id="artifacts-section">
+    {% if job.status == "transcription_finished" or job.status == "summary_finished" or job.status == "completed" %}
+    <div class="box">
+        <h2 class="subtitle">Transcription</h2>
+        {% if transcription_chunks %}
+            <ul>
+            {% for chunk in transcription_chunks %}
+                <li>
+                    <strong>{{ "{:02d}:{:02d} - {:02d}:{:02d}".format(chunk.start_time_ms // 60000, (chunk.start_time_ms // 1000) % 60, chunk.end_time_ms // 60000, (chunk.end_time_ms // 1000) % 60) }}</strong>:
+                    {{ chunk.text }}
+                </li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <p>Transcription pending or failed.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if job.status == "summary_finished" or job.status == "completed" %}
+    <div class="box">
+        <h2 class="subtitle">Summary</h2>
+        {% if summary_chunks %}
+            <ul>
+            {% for chunk in summary_chunks %}
+                <li>
+                    <a href="#"> <!-- TODO: Add link to video timestamp here -->
+                        <strong>{{ "{:02d}:{:02d} - {:02d}:{:02d}".format(chunk.start_time_ms // 60000, (chunk.start_time_ms // 1000) % 60, chunk.end_time_ms // 60000, (chunk.end_time_ms // 1000) % 60) }}</strong>:
+                    </a>
+                    {{ chunk.text }}
+                    <button class="button is-small" onclick="window.open('https://www.youtube.com/watch?v={{ job.video_id }}&t={{ chunk.start_time_ms // 1000 }}s', '_blank')">Go to Video</button>
+                </li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <p>Summary pending or failed.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if job.status == "completed" and job.type == "graph" %}
+    <div class="box">
+        <h2 class="subtitle">Graph</h2>
+        {% if graph_data %}
+            <div class="dropdown is-hoverable">
+                <div class="dropdown-trigger">
+                    <button class="button" aria-haspopup="true" aria-controls="dropdown-menu">
+                        <span>Chunk 0:00 - 3:00</span>
+                        <span class="icon is-small">
+                            <i class="fas fa-angle-down" aria-hidden="true"></i>
+                        </span>
+                    </button>
+                </div>
+                <div class="dropdown-menu" id="dropdown-menu" role="menu">
+                    <div class="dropdown-content">
+                        <div class="dropdown-item">
+                            <!-- TODO: Placeholder for Graph Visualization for Chunk 0:00 - 3:00 -->
+                            <p>Graph for Chunk 0:00 - 3:00 will be displayed here.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dropdown is-hoverable">
+                <div class="dropdown-trigger">
+                    <button class="button" aria-haspopup="true" aria-controls="dropdown-menu">
+                        <span>Chunk 9:00 - 12:00</span>
+                        <span class="icon is-small">
+                            <i class="fas fa-angle-down" aria-hidden="true"></i>
+                        </span>
+                    </button>
+                </div>
+                <div class="dropdown-menu" id="dropdown-menu" role="menu">
+                    <div class="dropdown-content">
+                        <div class="dropdown-item">
+                            <!-- TODO: Placeholder for Graph Visualization for Chunk 9:00 - 12:00 -->
+                            <p>Graph for Chunk 9:00 - 12:00 will be displayed here.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TODO: More dropdowns dynamically based on chunks -->
+
+        {% else %}
+            <p>Graph generation pending or failed.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    const jobId = "{{ job_id }}";
+    const jobStatusSpan = document.getElementById('job-status');
+    const artifactsSection = document.getElementById('artifacts-section');
+
+    const eventSource = new EventSource(`/job_status_events/${jobId}`);
+
+    eventSource.onmessage = function(event) {
+        if (event.type === 'message' && event.data) {
+            const status = event.data;
+            jobStatusSpan.textContent = status;
+            if (status === 'transcription_finished' || status === 'summary_finished' || status === 'completed') {
+                fetch(`/job_status/${jobId}`)
+                    .then(response => response.text())
+                    .then(html => {
+                        const tempElement = document.createElement('div');
+                        tempElement.innerHTML = html;
+                        const newArtifactsSection = tempElement.querySelector('#artifacts-section');
+                        if (newArtifactsSection) {
+                            artifactsSection.innerHTML = newArtifactsSection.innerHTML;
+                        }
+                    });
+            }
+             if (status === 'completed') {
+                eventSource.close();
+            }
+        }
+    };
+
+    eventSource.onerror = function(error) {
+        console.error("SSE error:", error);
+        eventSource.close();
+    };
+</script>
+{% endblock %}

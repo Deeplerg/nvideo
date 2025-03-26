@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="title">Welcome to nVideo Web Service</h1>
+
+{% if message %}
+    <div class="notification is-success">{{ message }}</div>
+{% endif %}
+{% if error %}
+    <div class="notification is-danger">{{ error }}</div>
+{% endif %}
+
+<div class="columns">
+    <div class="column is-half">
+        <h2 class="subtitle">Register</h2>
+        <form method="post" action="/register">
+            <div class="field">
+                <label class="label">Username</label>
+                <div class="control">
+                    <input class="input" type="text" name="username" placeholder="Enter username" required>
+                </div>
+            </div>
+            <div class="field">
+                <div class="control">
+                    <button class="button is-primary" type="submit">Register</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="column is-half">
+        <h2 class="subtitle">Login</h2>
+        <form method="post" action="/login">
+            <div class="field">
+                <label class="label">Username</label>
+                <div class="control">
+                    <input class="input" type="text" name="username" placeholder="Enter username" required>
+                </div>
+            </div>
+            <div class="field">
+                <div class="control">
+                    <button class="button is-primary" type="submit">Login</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if user_id %}
+<hr>
+<h2 class="subtitle">Create New Job (User ID: {{ user_id }})</h2>
+<form method="post" action="/create_job">
+    <input type="hidden" name="user_id" value="{{ user_id }}">
+
+    <div class="field">
+        <label class="label">Job Type</label>
+        <div class="control">
+            <div class="select">
+                <select name="job_type" required>
+                    <option value="">Select Job Type</option>
+                    <option value="transcription">Transcription</option>
+                    <option value="summary">Summary</option>
+                    <option value="graph">Graph</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="field">
+        <label class="label">Video ID</label>
+        <div class="control">
+            <input class="input" type="text" name="video_id" placeholder="Enter YouTube Video ID" required>
+        </div>
+    </div>
+
+    <div class="field model-selection" id="model-selection-transcription" style="display:none;">
+        <label class="label">Transcription Model</label>
+        <div class="control">
+            {% for model in available_models %}
+                {% if 'transcription' in model.name %}
+                <label class="checkbox">
+                    <input type="checkbox" name="action_models_form" value="{{ model.name }}">
+                    {{ model.name.split('.')[-1] }} ({{ model.name.split('.')[0] }})
+                </label>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="field model-selection" id="model-selection-summary" style="display:none;">
+        <label class="label">Summary Model</label>
+        <div class="control">
+            {% for model in available_models %}
+                {% if 'summary' in model.name %}
+                <label class="checkbox">
+                    <input type="checkbox" name="action_models_form" value="{{ model.name }}">
+                    {{ model.name.split('.')[-1] }} ({{ model.name.split('.')[0] }})
+                </label>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+     <div class="field model-selection" id="model-selection-graph" style="display:none;">
+        <label class="label">Graph Model</label>
+        <div class="control">
+            {% for model in available_models %}
+                {% if 'graph' in model.name %}
+                <label class="checkbox">
+                    <input type="checkbox" name="action_models_form" value="{{ model.name }}">
+                    {{ model.name.split('.')[-1] }} ({{ model.name.split('.')[0] }})
+                </label>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+
+    <div class="field">
+        <div class="control">
+            <button class="button is-primary" type="submit">Create Job</button>
+        </div>
+    </div>
+</form>
+{% endif %}
+
+<script>
+    document.querySelector('select[name="job_type"]').addEventListener('change', function() {
+        const jobType = this.value;
+        document.querySelectorAll('.model-selection').forEach(el => el.style.display = 'none');
+
+        if (jobType === 'transcription') {
+            document.getElementById('model-selection-transcription').style.display = 'block';
+        } else if (jobType === 'summary') {
+            document.getElementById('model-selection-transcription').style.display = 'block';
+            document.getElementById('model-selection-summary').style.display = 'block';
+        } else if (jobType === 'graph') {
+            document.getElementById('model-selection-transcription').style.display = 'block';
+            document.getElementById('model-selection-graph').style.display = 'block';
+        }
+    });
+</script>
+
+{% endblock %}

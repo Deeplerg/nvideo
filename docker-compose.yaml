@@ -49,16 +49,6 @@ services:
     networks:
       - app-network
 
-#  web:
-#    build: ./web_service
-#    env_file: .env
-#    ports:
-#      - "8001:8001"
-#    depends_on:
-#      - api
-#    networks:
-#      - app-network
-
   local-transcription-service:
     build: ./local_transcription_service
     env_file: .env
@@ -109,6 +99,16 @@ services:
       - app-network
     volumes:
       - local-models:/models
+
+  web:
+    build: ./web_service
+    env_file: .env
+    ports:
+      - "8004:8000"
+    depends_on:
+      - api
+    networks:
+      - app-network
 
 networks:
   app-network:

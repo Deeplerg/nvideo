@@ -1,4 +1,5 @@
 ﻿from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -21,6 +22,12 @@ class JobCompleted(BaseModel):
     id: UUID
     type: str
     video_id: str
+    user_id: int
+
+class JobStatusUpdated(BaseModel):
+    id: UUID
+    video_id: str
+    status: str
     user_id: int
 
 
@@ -58,7 +65,7 @@ class ArtifactResponse(BaseModel):
     id: UUID
     job_id: UUID
     type: str
-    content: str
+    content: Any
 
 
 class SummaryRequest(BaseModel):

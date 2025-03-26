@@ -1,138 +1,295 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1 class="title">Job Status</h1>
+<h1 class="title">Статус задания</h1>
 
-<div class="box">
-    <p><strong>Job ID:</strong> {{ job.id }}</p>
-    <p><strong>Job Type:</strong> {{ job.type }}</p>
-    <p><strong>Video ID:</strong> {{ job.video_id }}</p>
-    <p><strong>Status:</strong> <span id="job-status">{{ job.status }}</span></p>
+<div class="box job-info-box">
+    <div class="level">
+        <div class="level-left">
+            <div>
+                <p><strong>ID Задания:</strong> {{ job.id }}</p>
+                <p><strong>Тип:</strong> {{ job.type }}</p>
+                <p><strong>Видео ID:</strong>
+                    <a href="{{ utils.generate_youtube_link(job.video_id, 0) }}" target="_blank">{{ job.video_id }}</a>
+                </p>
+            </div>
+        </div>
+        <div class="level-right">
+             <div class="has-text-right">
+                 <p><strong>Статус:</strong></p>
+                 <p><span id="job-status" class="tag is-info is-large">{{ job.status }}</span></p>
+             </div>
+        </div>
+    </div>
+     <progress id="job-progress" class="progress is-small is-primary" max="100" style="display: none;"></progress>
 </div>
 
-<div id="artifacts-section">
-    {% if job.status == "transcription_finished" or job.status == "summary_finished" or job.status == "completed" %}
-    <div class="box">
-        <h2 class="subtitle">Transcription</h2>
-        {% if transcription_chunks %}
-            <ul>
-            {% for chunk in transcription_chunks %}
-                <li>
-                    <strong>{{ "{:02d}:{:02d} - {:02d}:{:02d}".format(chunk.start_time_ms // 60000, (chunk.start_time_ms // 1000) % 60, chunk.end_time_ms // 60000, (chunk.end_time_ms // 1000) % 60) }}</strong>:
-                    {{ chunk.text }}
-                </li>
-            {% endfor %}
-            </ul>
-        {% else %}
-            <p>Transcription pending or failed.</p>
-        {% endif %}
-    </div>
+<div id="final-result-section" class="box" {% if job.status != 'completed' %}style="display: none;"{% endif %}>
+    <h2 class="subtitle">Итоговый результат</h2>
+    {% if job.type == 'summary' %}
+        <div id="final-summary-content" class="content">
+            {% if artifacts.summary %} {% for chunk in artifacts.summary %}
+                 <div class="sub-accordion-item">
+                    <div class="sub-accordion-header" data-target="summary-final-chunk-{{ loop.index }}"> <a href="{{ utils.generate_youtube_link(job.video_id, chunk.start_time_ms) }}" target="_blank" class="youtube-link" onclick="event.stopPropagation()"> [{{ utils.format_ms_range(chunk.start_time_ms, chunk.end_time_ms) }}] </a> <span class="icon is-small"><i class="fas fa-chevron-down"></i></span> </div>
+                    <div id="summary-final-chunk-{{ loop.index }}" class="sub-accordion-content"> {{ chunk.text }} </div>
+                 </div>
+            {% endfor %} {% elif job.status == 'completed' %} <p>Суммаризация завершена, но артефакт не найден или пуст.</p> {% else %} <p>Суммаризация еще не завершена.</p> {% endif %}
+        </div>
     {% endif %}
-
-    {% if job.status == "summary_finished" or job.status == "completed" %}
-    <div class="box">
-        <h2 class="subtitle">Summary</h2>
-        {% if summary_chunks %}
-            <ul>
-            {% for chunk in summary_chunks %}
-                <li>
-                    <a href="#"> <!-- TODO: Add link to video timestamp here -->
-                        <strong>{{ "{:02d}:{:02d} - {:02d}:{:02d}".format(chunk.start_time_ms // 60000, (chunk.start_time_ms // 1000) % 60, chunk.end_time_ms // 60000, (chunk.end_time_ms // 1000) % 60) }}</strong>:
-                    </a>
-                    {{ chunk.text }}
-                    <button class="button is-small" onclick="window.open('https://www.youtube.com/watch?v={{ job.video_id }}&t={{ chunk.start_time_ms // 1000 }}s', '_blank')">Go to Video</button>
-                </li>
-            {% endfor %}
-            </ul>
-        {% else %}
-            <p>Summary pending or failed.</p>
-        {% endif %}
-    </div>
+    {% if job.type == 'graph' %}
+        <div id="final-graph-content">
+             {% if sorted_chunk_end_times %}
+                 <label class="label" for="graph-chunk-select">Показать граф до момента:</label>
+                 <div class="field has-addons">
+                      <div class="control is-expanded">
+                         <div class="select is-fullwidth">
+                             <select id="graph-chunk-select"> <option value="" selected disabled>Выберите временной интервал</option> {% for end_ms in sorted_chunk_end_times %} <option value="{{ end_ms }}">{{ utils.format_ms_range(0, end_ms) }}</option> {% endfor %} </select>
+                         </div>
+                      </div>
+                     <div class="control"> <button id="load-graph-button" class="button is-info">Загрузить граф</button> </div>
+                 </div>
+                 <div id="graph-display-area"> <p>Выберите временной интервал и нажмите "Загрузить граф".</p> </div>
+             {% elif job.status == 'completed' %} <p>Граф завершен, но нет данных о временных интервалах для отображения.</p> {% else %} <p>Граф еще не завершен.</p> {% endif %}
+        </div>
     {% endif %}
-
-    {% if job.status == "completed" and job.type == "graph" %}
-    <div class="box">
-        <h2 class="subtitle">Graph</h2>
-        {% if graph_data %}
-            <div class="dropdown is-hoverable">
-                <div class="dropdown-trigger">
-                    <button class="button" aria-haspopup="true" aria-controls="dropdown-menu">
-                        <span>Chunk 0:00 - 3:00</span>
-                        <span class="icon is-small">
-                            <i class="fas fa-angle-down" aria-hidden="true"></i>
-                        </span>
-                    </button>
-                </div>
-                <div class="dropdown-menu" id="dropdown-menu" role="menu">
-                    <div class="dropdown-content">
-                        <div class="dropdown-item">
-                            <!-- TODO: Placeholder for Graph Visualization for Chunk 0:00 - 3:00 -->
-                            <p>Graph for Chunk 0:00 - 3:00 will be displayed here.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="dropdown is-hoverable">
-                <div class="dropdown-trigger">
-                    <button class="button" aria-haspopup="true" aria-controls="dropdown-menu">
-                        <span>Chunk 9:00 - 12:00</span>
-                        <span class="icon is-small">
-                            <i class="fas fa-angle-down" aria-hidden="true"></i>
-                        </span>
-                    </button>
-                </div>
-                <div class="dropdown-menu" id="dropdown-menu" role="menu">
-                    <div class="dropdown-content">
-                        <div class="dropdown-item">
-                            <!-- TODO: Placeholder for Graph Visualization for Chunk 9:00 - 12:00 -->
-                            <p>Graph for Chunk 9:00 - 12:00 will be displayed here.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TODO: More dropdowns dynamically based on chunks -->
-
-        {% else %}
-            <p>Graph generation pending or failed.</p>
-        {% endif %}
-    </div>
+    {% if job.type == 'transcription' %}
+        <div id="final-transcription-content" class="content">
+             {% if artifacts.transcription %} {% for chunk in artifacts.transcription %}
+                  <div class="sub-accordion-item">
+                     <div class="sub-accordion-header" data-target="transcription-final-chunk-{{ loop.index }}"> <a href="{{ utils.generate_youtube_link(job.video_id, chunk.start_time_ms) }}" target="_blank" class="youtube-link" onclick="event.stopPropagation()"> [{{ utils.format_ms_range(chunk.start_time_ms, chunk.end_time_ms) }}] </a> <span class="icon is-small"><i class="fas fa-chevron-down"></i></span> </div>
+                     <div id="transcription-final-chunk-{{ loop.index }}" class="sub-accordion-content"> {{ chunk.text }} </div>
+                  </div>
+             {% endfor %} {% elif job.status == 'completed' %} <p>Транскрипция завершена, но артефакт не найден или пуст.</p> {% else %} <p>Транскрипция еще не завершена.</p> {% endif %}
+        </div>
     {% endif %}
 </div>
 
+<div id="intermediate-artifacts-section" class="box">
+    <h2 class="subtitle">Детализация / Промежуточные результаты</h2>
+    {% if artifacts.transcription and job.type != 'transcription' %}
+    <div class="accordion-item">
+        <div class="accordion-header" data-target="transcription-content"> Транскрипция <span class="icon is-small"><i class="fas fa-chevron-down"></i></span> </div>
+        <div id="transcription-content" class="accordion-content content">
+             {% for chunk in artifacts.transcription %}
+              <div class="sub-accordion-item">
+                 <div class="sub-accordion-header" data-target="transcription-int-chunk-{{ loop.index }}"> <a href="{{ utils.generate_youtube_link(job.video_id, chunk.start_time_ms) }}" target="_blank" class="youtube-link" onclick="event.stopPropagation()"> [{{ utils.format_ms_range(chunk.start_time_ms, chunk.end_time_ms) }}] </a> <span class="icon is-small"><i class="fas fa-chevron-down"></i></span> </div>
+                 <div id="transcription-int-chunk-{{ loop.index }}" class="sub-accordion-content"> {{ chunk.text }} </div>
+              </div>
+             {% endfor %}
+        </div>
+    </div>
+    {% elif job.type in ['summary', 'graph'] and not artifacts.transcription %}
+       <div class="accordion-item"> <div class="accordion-header disabled-header">Транскрипция</div> <div class="accordion-content"><p>Транскрипция еще не готова или не удалась.</p></div> </div>
+    {% endif %}
+    {% if artifacts.summary and job.type != 'summary' %}
+     <div class="accordion-item">
+         <div class="accordion-header" data-target="summary-content"> Промежуточная суммаризация <span class="icon is-small"><i class="fas fa-chevron-down"></i></span> </div>
+         <div id="summary-content" class="accordion-content content">
+             {% for chunk in artifacts.summary %}
+              <div class="sub-accordion-item">
+                 <div class="sub-accordion-header" data-target="summary-int-chunk-{{ loop.index }}"> <a href="{{ utils.generate_youtube_link(job.video_id, chunk.start_time_ms) }}" target="_blank" class="youtube-link" onclick="event.stopPropagation()"> [{{ utils.format_ms_range(chunk.start_time_ms, chunk.end_time_ms) }}] </a> <span class="icon is-small"><i class="fas fa-chevron-down"></i></span> </div>
+                 <div id="summary-int-chunk-{{ loop.index }}" class="sub-accordion-content"> {{ chunk.text }} </div>
+              </div>
+             {% endfor %}
+         </div>
+     </div>
+     {% endif %}
+    {% if artifacts.entity_relation %}
+    <div class="accordion-item">
+        <div class="accordion-header" data-target="entity-relation-content"> Сущности и связи <span class="icon is-small"><i class="fas fa-chevron-down"></i></span> </div>
+        <div id="entity-relation-content" class="accordion-content content">
+            <div class="tabs is-boxed" id="entity-tabs">
+              <ul>
+                <li class="is-active" data-tab="entities-pane"><a>Сущности ({{ artifacts.entity_relation.entities | length }})</a></li>
+                <li data-tab="relations-pane"><a>Связи ({{ artifacts.entity_relation.relationships | length }})</a></li>
+              </ul>
+            </div>
+            <div class="tabs-content">
+                <div id="entities-pane" class="tab-pane is-active">
+                    {% if artifacts.entity_relation.entities %} <ul> {% for entity in artifacts.entity_relation.entities %} <li> <a href="{{ utils.generate_youtube_link(job.video_id, entity.chunk_start_time_ms) }}" target="_blank" class="youtube-link"> [{{ utils.format_ms_range(entity.chunk_start_time_ms, entity.chunk_end_time_ms) }}] </a> {{ entity.name }} </li> {% endfor %} </ul> {% else %}<p>Сущности не найдены.</p>{% endif %}
+                </div>
+                <div id="relations-pane" class="tab-pane">
+                     {% if artifacts.entity_relation.relationships %} <ul> {% for rel in artifacts.entity_relation.relationships %} <li> <a href="{{ utils.generate_youtube_link(job.video_id, rel.chunk_start_time_ms) }}" target="_blank" class="youtube-link"> [{{ utils.format_ms_range(rel.chunk_start_time_ms, rel.chunk_end_time_ms) }}] </a> {{ rel.source_entity }} <span class="has-text-grey">→</span> {{ rel.target_entity }} ({{ rel.description }}) </li> {% endfor %} </ul> {% else %}<p>Связи не найдены.</p>{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+     {% elif job.type == 'graph' %}
+       <div class="accordion-item"> <div class="accordion-header disabled-header">Сущности и связи</div> <div class="accordion-content"><p>Данные о сущностях и связях еще не готовы или не удались.</p></div> </div>
+     {% endif %}
+</div>
+{% endblock %}
+
+
+{% block scripts %}
 <script>
-    const jobId = "{{ job_id }}";
-    const jobStatusSpan = document.getElementById('job-status');
-    const artifactsSection = document.getElementById('artifacts-section');
+    document.addEventListener('DOMContentLoaded', function() {
+        const jobId = "{{ job.id }}";
+        const jobType = "{{ job.type }}";
+        const initialStatus = "{{ job.status }}";
+        const jobStatusSpan = document.getElementById('job-status');
+        const finalResultSection = document.getElementById('final-result-section');
+        const graphChunkSelect = document.getElementById('graph-chunk-select');
+        const loadGraphButton = document.getElementById('load-graph-button');
+        const graphDisplayArea = document.getElementById('graph-display-area');
+        const progressBar = document.getElementById('job-progress');
+        const entityTabsContainer = document.getElementById('entity-tabs');
 
-    const eventSource = new EventSource(`/job_status_events/${jobId}`);
+        // accordions
+        function setupAccordionToggle(containerSelector, headerSelector) {
+             const container = document.querySelector(containerSelector);
+             if (!container) return;
+             container.querySelectorAll(headerSelector).forEach(header => {
+                 if (header.dataset.listenerAttached) return;
+                 header.dataset.listenerAttached = true;
+                 header.addEventListener('click', (event) => {
+                     if (event.target.closest('.youtube-link')) { return; }
+                     const targetId = header.getAttribute('data-target');
+                     const content = document.getElementById(targetId);
+                     if (!content) return;
+                     const icon = header.querySelector('.icon i');
+                     header.classList.toggle('is-active');
+                     if (header.classList.contains('is-active')) {
+                         content.style.display = 'block'; if(icon) icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
+                     } else {
+                         content.style.display = 'none'; if(icon) icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
+                     }
+                 });
+             });
+        }
+        setupAccordionToggle('#intermediate-artifacts-section', '.accordion-header');
+        setupAccordionToggle('#intermediate-artifacts-section', '.sub-accordion-header');
+        setupAccordionToggle('#final-result-section', '.sub-accordion-header');
 
-    eventSource.onmessage = function(event) {
-        if (event.type === 'message' && event.data) {
-            const status = event.data;
-            jobStatusSpan.textContent = status;
-            if (status === 'transcription_finished' || status === 'summary_finished' || status === 'completed') {
-                fetch(`/job_status/${jobId}`)
-                    .then(response => response.text())
-                    .then(html => {
-                        const tempElement = document.createElement('div');
-                        tempElement.innerHTML = html;
-                        const newArtifactsSection = tempElement.querySelector('#artifacts-section');
-                        if (newArtifactsSection) {
-                            artifactsSection.innerHTML = newArtifactsSection.innerHTML;
-                        }
-                    });
-            }
-             if (status === 'completed') {
-                eventSource.close();
+        // tabs
+        if (entityTabsContainer) {
+            const tabs = entityTabsContainer.querySelectorAll('li');
+            const tabsContent = entityTabsContainer.parentElement.querySelector('.tabs-content');
+            if (tabsContent) {
+                const tabPanes = tabsContent.querySelectorAll('.tab-pane');
+                tabs.forEach(tab => {
+                     if (tab.dataset.listenerAttached) return;
+                     tab.dataset.listenerAttached = true;
+                     tab.addEventListener('click', () => {
+                         const targetPaneId = tab.getAttribute('data-tab');
+                         tabs.forEach(t => t.classList.remove('is-active'));
+                         tabPanes.forEach(p => p.classList.remove('is-active'));
+                         tab.classList.add('is-active');
+                         document.getElementById(targetPaneId)?.classList.add('is-active');
+                     });
+                });
             }
         }
-    };
 
-    eventSource.onerror = function(error) {
-        console.error("SSE error:", error);
-        eventSource.close();
-    };
+        function updateUIForStatus(status) {
+             jobStatusSpan.textContent = status;
+             jobStatusSpan.className = 'tag is-large ' + getStatusClass(status);
+             updateProgressBar(status);
+             if (status === 'completed') {
+                 finalResultSection.style.display = 'block';
+             } else {
+                 finalResultSection.style.display = 'none';
+             }
+             const intermediateStatuses = ['transcription_finished', 'summary_finished', 'entity-relation_finished'];
+             if (intermediateStatuses.includes(status) && status !== initialStatus) {
+                 if (!window.reloadPending) {
+                     window.reloadPending = true;
+                     setTimeout(() => { window.location.reload(); }, 1500);
+                 }
+             }
+        }
+        function getStatusClass(status) {
+             switch (status) {
+                 case 'created': return 'is-light';
+                 case 'download_started': return 'is-info is-light'; case 'download_finished': return 'is-info';
+                 case 'transcription_started': return 'is-info is-light'; case 'transcription_finished': return (jobType === 'transcription' ? 'is-success' : 'is-link');
+                 case 'summary_started': return 'is-info is-light'; case 'summary_finished': return (jobType === 'summary' ? 'is-success' : 'is-link');
+                 case 'entity-relation_started': return 'is-info is-light'; case 'entity-relation_finished': return (jobType === 'graph' ? 'is-link' : 'is-info');
+                 case 'graph_started': return 'is-info is-light';
+                 case 'completed': return 'is-success'; case 'failed': return 'is-danger';
+                 default: return 'is-info';
+             }
+         }
+        function updateProgressBar(status) {
+              if (!progressBar) return; let value = 0; progressBar.style.display = 'block'; progressBar.removeAttribute('value');
+              const stages = { 'created': 5, 'download_started': 10, 'download_finished': 15, 'transcription_started': 20, 'transcription_finished': (jobType === 'transcription' ? 95 : 40), 'summary_started': 45, 'summary_finished': (jobType === 'summary' ? 95 : 60), 'entity-relation_started': 45, 'entity-relation_finished': 60, 'graph_started': 65, 'completed': 100, 'failed': 100 };
+              if (status in stages) { value = stages[status]; }
+              if (status === 'completed' || status === 'failed') { progressBar.setAttribute('value', '100'); }
+              else { progressBar.removeAttribute('value'); if (value > 0) { progressBar.setAttribute('value', value.toString()); } }
+         }
+
+        if (typeof(EventSource) !== "undefined") {
+            const eventSource = new EventSource(`/job_status_events/${jobId}`);
+            eventSource.addEventListener('status_update', function(event) {
+                 if (event.data) {
+                     const newStatus = event.data;
+                     updateUIForStatus(newStatus);
+                     if (newStatus === 'completed' || newStatus === 'failed') { eventSource.close(); }
+                 }
+             });
+            eventSource.onerror = function(error) {
+                console.error("SSE Error:", error);
+                jobStatusSpan.textContent = "Ошибка соединения"; jobStatusSpan.className = 'tag is-large is-danger';
+                if (progressBar) progressBar.style.display = 'none';
+                eventSource.close();
+            };
+        } else {
+            console.warn("SSE not supported by this browser.");
+        }
+
+        function executeScriptContent(htmlContent, targetElement) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlContent, 'text/html');
+            const inlineScripts = doc.querySelectorAll('script:not([src])');
+            inlineScripts.forEach(scriptTag => {
+                const script = document.createElement('script');
+                script.textContent = scriptTag.textContent;
+                targetElement.appendChild(script);
+            });
+        }
+
+        // load graph
+        if (loadGraphButton && graphChunkSelect && graphDisplayArea) {
+            loadGraphButton.addEventListener('click', () => {
+                const selectedChunkEndMs = graphChunkSelect.value;
+                if (!selectedChunkEndMs) { graphDisplayArea.innerHTML = '<p class="has-text-danger">Пожалуйста, выберите временной интервал.</p>'; return; }
+                graphDisplayArea.innerHTML = '<div class="has-text-centered"><p>Загрузка графа...</p><progress class="progress is-small is-info" max="100"></progress></div>';
+                loadGraphButton.classList.add('is-loading'); loadGraphButton.disabled = true;
+
+                fetch(`/graph/${jobId}/${selectedChunkEndMs}`)
+                    .then(response => {
+                        if (!response.ok) { return response.text().then(text => { throw new Error(`Ошибка ${response.status}: ${text || response.statusText}`); }); }
+                        return response.text();
+                    })
+                    .then(html => {
+                        // Check if HTML snippet contains the plotly graph div structure
+                        if (html && typeof html === 'string' && html.includes('plotly-graph-div')) {
+                             graphDisplayArea.innerHTML = html; // inject
+                             // Execute the inline script which calls Plotly.newPlot
+                             try {
+                                 if (typeof Plotly !== 'undefined') {
+                                    executeScriptContent(html, graphDisplayArea);
+                                 } else {
+                                     console.error("Global Plotly object is NOT defined.");
+                                     graphDisplayArea.innerHTML = '<p class="has-text-danger">Ошибка: Библиотека Plotly не загрузилась.</p>';
+                                 }
+                             } catch (e) {
+                                 console.error("Error executing injected script content:", e);
+                                 graphDisplayArea.innerHTML = '<p class="has-text-danger">Ошибка при выполнении скрипта графа.</p>';
+                             }
+                        } else if (html && typeof html === 'string' && html.includes('Нет данных')) {
+                             graphDisplayArea.innerHTML = html;
+                        } else {
+                             graphDisplayArea.innerHTML = '<p class="has-text-danger">Получены неверные данные для графа.</p>';
+                             console.warn("Received invalid HTML snippet:", html ? html.substring(0, 500) : "HTML was null/not string");
+                        }
+                    })
+                    .catch(error => { graphDisplayArea.innerHTML = `<p class="has-text-danger">Не удалось загрузить граф: ${error.message}</p>`; })
+                    .finally(() => { loadGraphButton.classList.remove('is-loading'); loadGraphButton.disabled = false; });
+            });
+        }
+
+        updateUIForStatus(initialStatus);
+    });
 </script>
 {% endblock %}

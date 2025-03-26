@@ -1,144 +1,216 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1 class="title">Welcome to nVideo Web Service</h1>
+<h1 class="title">Добро пожаловать в nvideo</h1>
 
 {% if message %}
-    <div class="notification is-success">{{ message }}</div>
+    <div class="notification is-success is-light">{{ message }}</div>
 {% endif %}
 {% if error %}
-    <div class="notification is-danger">{{ error }}</div>
+    <div class="notification is-danger is-light">{{ error }}</div>
 {% endif %}
 
 <div class="columns">
     <div class="column is-half">
-        <h2 class="subtitle">Register</h2>
-        <form method="post" action="/register">
-            <div class="field">
-                <label class="label">Username</label>
-                <div class="control">
-                    <input class="input" type="text" name="username" placeholder="Enter username" required>
+        <div class="box">
+            <h2 class="subtitle">Регистрация</h2>
+            <form method="post" action="{{ url_for('register_user') }}">
+                <div class="field">
+                    <label class="label" for="reg-username">Имя пользователя</label>
+                    <div class="control">
+                        <input id="reg-username" class="input" type="text" name="username" placeholder="Введите имя пользователя" required>
+                    </div>
                 </div>
-            </div>
-            <div class="field">
-                <div class="control">
-                    <button class="button is-primary" type="submit">Register</button>
+                <div class="field">
+                    <div class="control">
+                        <button class="button is-primary" type="submit">Зарегистрироваться</button>
+                    </div>
                 </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 
     <div class="column is-half">
-        <h2 class="subtitle">Login</h2>
-        <form method="post" action="/login">
-            <div class="field">
-                <label class="label">Username</label>
-                <div class="control">
-                    <input class="input" type="text" name="username" placeholder="Enter username" required>
+         <div class="box">
+            <h2 class="subtitle">Вход</h2>
+            <form method="post" action="{{ url_for('login_user') }}">
+                <div class="field">
+                    <label class="label" for="login-username">Имя пользователя</label>
+                    <div class="control">
+                        <input id="login-username" class="input" type="text" name="username" placeholder="Введите имя пользователя" required>
+                    </div>
                 </div>
-            </div>
-            <div class="field">
-                <div class="control">
-                    <button class="button is-primary" type="submit">Login</button>
+                <div class="field">
+                    <div class="control">
+                        <button class="button is-success" type="submit">Войти</button>
+                    </div>
                 </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 </div>
 
 {% if user_id %}
 <hr>
-<h2 class="subtitle">Create New Job (User ID: {{ user_id }})</h2>
-<form method="post" action="/create_job">
-    <input type="hidden" name="user_id" value="{{ user_id }}">
+<div class="box">
+    <h2 class="subtitle">Создать новое задание (Пользователь ID: {{ user_id }})</h2>
+    <form method="post" action="{{ url_for('create_job') }}" id="create-job-form">
+        <input type="hidden" name="user_id" value="{{ user_id }}">
 
-    <div class="field">
-        <label class="label">Job Type</label>
-        <div class="control">
-            <div class="select">
-                <select name="job_type" required>
-                    <option value="">Select Job Type</option>
-                    <option value="transcription">Transcription</option>
-                    <option value="summary">Summary</option>
-                    <option value="graph">Graph</option>
-                </select>
+        <div class="field">
+            <label class="label" for="job-type-select">Тип задания</label>
+            <div class="control">
+                <div class="select is-fullwidth">
+                    <select id="job-type-select" name="job_type" required>
+                        <option value="" disabled selected>Выберите тип задания</option>
+                        <option value="transcription">Транскрипция</option>
+                        <option value="summary">Суммаризация</option>
+                        <option value="graph">Граф сущностей</option>
+                    </select>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="field">
-        <label class="label">Video ID</label>
-        <div class="control">
-            <input class="input" type="text" name="video_id" placeholder="Enter YouTube Video ID" required>
+        <div class="field">
+            <label class="label" for="video-id-input">ID Видео YouTube</label>
+            <div class="control">
+                <input id="video-id-input" class="input" type="text" name="video_id" placeholder="Пример: dQw4w9WgXcQ" required>
+            </div>
+            <p class="help">Введите только ID видео, например, 'dQw4w9WgXcQ' из ссылки 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'.</p>
         </div>
-    </div>
 
-    <div class="field model-selection" id="model-selection-transcription" style="display:none;">
-        <label class="label">Transcription Model</label>
-        <div class="control">
-            {% for model in available_models %}
-                {% if 'transcription' in model.name %}
-                <label class="checkbox">
-                    <input type="checkbox" name="action_models_form" value="{{ model.name }}">
-                    {{ model.name.split('.')[-1] }} ({{ model.name.split('.')[0] }})
-                </label>
+        <!-- Model Selection Sections -->
+        <div class="field model-selection" id="model-selection-transcription" style="display:none;">
+            <label class="label">Модель Транскрипции</label>
+            <div class="control">
+                {% if model_map.transcription %}
+                    {% for model in model_map.transcription %}
+                    <label class="radio">
+                        <input type="radio" name="transcription_model" value="{{ model.value }}">
+                        {{ model.name }}
+                    </label><br>
+                    {% endfor %}
+                {% else %}
+                    <p class="has-text-danger">Нет доступных моделей транскрипции.</p>
                 {% endif %}
-            {% endfor %}
+            </div>
         </div>
-    </div>
 
-    <div class="field model-selection" id="model-selection-summary" style="display:none;">
-        <label class="label">Summary Model</label>
-        <div class="control">
-            {% for model in available_models %}
-                {% if 'summary' in model.name %}
-                <label class="checkbox">
-                    <input type="checkbox" name="action_models_form" value="{{ model.name }}">
-                    {{ model.name.split('.')[-1] }} ({{ model.name.split('.')[0] }})
-                </label>
-                {% endif %}
-            {% endfor %}
+        <div class="field model-selection" id="model-selection-summary" style="display:none;">
+            <label class="label">Модель Суммаризации</label>
+            <div class="control">
+                 {% if model_map.summary %}
+                    {% for model in model_map.summary %}
+                    <label class="radio">
+                        <input type="radio" name="summary_model" value="{{ model.value }}">
+                        {{ model.name }}
+                    </label><br>
+                    {% endfor %}
+                 {% else %}
+                    <p class="has-text-danger">Нет доступных моделей суммаризации.</p>
+                 {% endif %}
+            </div>
         </div>
-    </div>
 
-     <div class="field model-selection" id="model-selection-graph" style="display:none;">
-        <label class="label">Graph Model</label>
-        <div class="control">
-            {% for model in available_models %}
-                {% if 'graph' in model.name %}
-                <label class="checkbox">
-                    <input type="checkbox" name="action_models_form" value="{{ model.name }}">
-                    {{ model.name.split('.')[-1] }} ({{ model.name.split('.')[0] }})
-                </label>
-                {% endif %}
-            {% endfor %}
+         <div class="field model-selection" id="model-selection-entity-relation" style="display:none;">
+             <label class="label">Модель Извлечения Сущностей (Entity-Relation)</label>
+             <div class="control">
+                 {% if model_map['entity-relation'] %}
+                    {% for model in model_map['entity-relation'] %}
+                    <label class="radio">
+                        <input type="radio" name="entity_relation_model" value="{{ model.value }}">
+                        {{ model.name }}
+                    </label><br>
+                    {% endfor %}
+                 {% else %}
+                    <p class="has-text-danger">Нет доступных моделей извлечения сущностей.</p>
+                 {% endif %}
+             </div>
+         </div>
+
+         <div class="field model-selection" id="model-selection-graph" style="display:none;">
+            <label class="label">Модель Построения Графа</label>
+            <div class="control">
+                 {% if model_map.graph %}
+                    {% for model in model_map.graph %}
+                    <label class="radio">
+                        <input type="radio" name="graph_model" value="{{ model.value }}">
+                        {{ model.name }}
+                    </label><br>
+                    {% endfor %}
+                 {% else %}
+                    <p class="has-text-danger">Нет доступных моделей построения графа.</p>
+                 {% endif %}
+            </div>
         </div>
-    </div>
+        <!-- End Model Selection -->
 
-
-    <div class="field">
-        <div class="control">
-            <button class="button is-primary" type="submit">Create Job</button>
+        <div class="field">
+            <div class="control">
+                <button class="button is-link" type="submit">Создать Задание</button>
+            </div>
         </div>
-    </div>
-</form>
+    </form>
+</div>
 {% endif %}
+{% endblock %}
 
+{% block scripts %}
 <script>
-    document.querySelector('select[name="job_type"]').addEventListener('change', function() {
-        const jobType = this.value;
-        document.querySelectorAll('.model-selection').forEach(el => el.style.display = 'none');
+    document.addEventListener('DOMContentLoaded', function() {
+        const jobTypeSelect = document.getElementById('job-type-select');
+        const modelSections = {
+            transcription: document.getElementById('model-selection-transcription'),
+            summary: document.getElementById('model-selection-summary'),
+            entityRelation: document.getElementById('model-selection-entity-relation'),
+            graph: document.getElementById('model-selection-graph')
+        };
 
-        if (jobType === 'transcription') {
-            document.getElementById('model-selection-transcription').style.display = 'block';
-        } else if (jobType === 'summary') {
-            document.getElementById('model-selection-transcription').style.display = 'block';
-            document.getElementById('model-selection-summary').style.display = 'block';
-        } else if (jobType === 'graph') {
-            document.getElementById('model-selection-transcription').style.display = 'block';
-            document.getElementById('model-selection-graph').style.display = 'block';
+        function updateModelSelectionVisibility() {
+            const jobType = jobTypeSelect.value;
+
+            // Hide all model sections first
+            Object.values(modelSections).forEach(el => { if(el) el.style.display = 'none'; });
+            // Disable all radio buttons initially
+            document.querySelectorAll('.model-selection input[type="radio"]').forEach(radio => radio.disabled = true);
+
+
+            // Show relevant sections and enable radios
+            if (jobType === 'transcription') {
+                if (modelSections.transcription) {
+                    modelSections.transcription.style.display = 'block';
+                    modelSections.transcription.querySelectorAll('input[type="radio"]').forEach(radio => radio.disabled = false);
+                }
+            } else if (jobType === 'summary') {
+                 if (modelSections.transcription) {
+                     modelSections.transcription.style.display = 'block';
+                     modelSections.transcription.querySelectorAll('input[type="radio"]').forEach(radio => radio.disabled = false);
+                 }
+                 if (modelSections.summary) {
+                    modelSections.summary.style.display = 'block';
+                    modelSections.summary.querySelectorAll('input[type="radio"]').forEach(radio => radio.disabled = false);
+                 }
+            } else if (jobType === 'graph') {
+                 if (modelSections.transcription) {
+                     modelSections.transcription.style.display = 'block';
+                     modelSections.transcription.querySelectorAll('input[type="radio"]').forEach(radio => radio.disabled = false);
+                 }
+                 if (modelSections.entityRelation) { // Require entity relation for graph
+                     modelSections.entityRelation.style.display = 'block';
+                     modelSections.entityRelation.querySelectorAll('input[type="radio"]').forEach(radio => radio.disabled = false);
+                 }
+                 if (modelSections.graph) {
+                    modelSections.graph.style.display = 'block';
+                    modelSections.graph.querySelectorAll('input[type="radio"]').forEach(radio => radio.disabled = false);
+                 }
+            }
+        }
+
+        if (jobTypeSelect) {
+            jobTypeSelect.addEventListener('change', updateModelSelectionVisibility);
+            // Initial call in case the page loads with a type selected (e.g., after error)
+            updateModelSelectionVisibility();
         }
     });
 </script>
-
 {% endblock %}

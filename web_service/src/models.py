@@ -53,3 +53,19 @@ class JobStatusUpdated(BaseModel):
     video_id: str
     status: str
     user_id: int
+
+class EntityResult(BaseModel):
+    name: str
+    chunk_start_time_ms: int
+    chunk_end_time_ms: int
+
+class RelationshipResult(BaseModel):
+    source_entity: str
+    target_entity: str
+    description: str
+    chunk_start_time_ms: int
+    chunk_end_time_ms: int
+
+class EntityRelationResult(BaseModel):
+    entities: list[EntityResult]
+    relationships: list[RelationshipResult]

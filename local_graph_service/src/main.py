@@ -1,4 +1,5 @@
-﻿from fastapi import FastAPI, Depends
+﻿import asyncio
+from fastapi import FastAPI, Depends
 from fastapi_utils.tasks import repeat_every
 from faststream.rabbit import RabbitBroker
 from faststream.rabbit.fastapi import RabbitRouter, Logger
@@ -88,7 +89,7 @@ async def graph_local(
 ):
     logger.info(f"Handling graph request for {body.video_id}...")
 
-    graph = graph_service.generate_graph(body.entity_relations)
+    graph = await asyncio.to_thread(graph_service.generate_graph, body.entity_relations)
     logger.info(f"Made a set of points for video {body.video_id}")
 
     result=GraphResult.from_graph(graph)

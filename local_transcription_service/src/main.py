@@ -1,8 +1,7 @@
-﻿import os
-
+﻿import asyncio
+import os
 from fastapi import FastAPI, Depends
 from fastapi_utils.tasks import repeat_every
-from faststream.rabbit import RabbitBroker
 from faststream.rabbit.fastapi import RabbitRouter, Logger
 from .services.DownloadService import DownloadService
 from .services.TranscriptionChunk import TranscriptionChunk
@@ -51,6 +50,7 @@ def get_download_service():
 
 @router.after_startup
 async def startup(app: FastAPI):
+    await broker.connect()
     await broker.start()
 
     await publish_available_models()
@@ -74,6 +74,14 @@ def convert_to_chunk_results(chunks: list[TranscriptionChunk]) -> list[Transcrip
         for chunk in chunks
     ]
 
+async def try_publish(response: TranscriptionResponse) -> bool:
+    try:
+        await broker.publish(response, queue="transcription.result")
+        return True
+    except Exception as e:
+        print(e)
+        return False
+
 @router.subscriber("transcription.local-whisper")
 async def transcribe_local_whisper(
         body: TranscriptionRequest,
@@ -83,12 +91,12 @@ async def transcribe_local_whisper(
 ):
     logger.info(f"Handling transcription request for {body.video_id}...")
 
-    path = download.download_video_by_id(body.video_id)
+    path = await asyncio.to_thread(download.download_video_by_id, body.video_id)
     logger.info(f"Downloaded {body.video_id} to {path}")
 
     segment_length_ms = AppConfiguration.TRANSCRIPTION_CHUNK_SECONDS * 1000
 
-    chunks = transcription.transcribe(path, segment_length_ms)
+    chunks = await asyncio.to_thread(transcription.transcribe, path, segment_length_ms)
     logger.info(f"Transcribed video {body.video_id}")
 
     response=TranscriptionResponse(

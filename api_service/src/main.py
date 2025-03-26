@@ -247,7 +247,10 @@ async def handle_transcription_result(
     )
     session.add(artifact)
 
-    job.status = "transcription_finished"
+    if job.type == "transcription":
+        job.status = "completed"
+    else:
+        job.status = "transcription_finished"
     session.add(job)
 
     session.commit()
@@ -286,6 +289,16 @@ async def handle_transcription_result(
 
             await broker.publish(request, queue=model)
             logger.info(f"Published {model}, job_id: {job.id}")
+
+        case "transcription":
+            await broker.publish(JobCompleted(
+                id=job.id,
+                type=job.type,
+                video_id=job.video_id,
+                user_id=job.user_id
+            ), queue=f"job.completed")
+
+            logger.info(f"Job {job.id} completed")
 
         case _:
             return

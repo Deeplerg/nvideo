@@ -14,7 +14,7 @@ from .models import *
 
 
 router = RabbitRouter(AppConfiguration.AMQP_URL, fail_fast=False)
-broker = RabbitBroker(AppConfiguration.AMQP_URL, fail_fast=False)
+broker = router.broker
 app = FastAPI()
 app.include_router(router)
 

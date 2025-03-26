@@ -15,7 +15,6 @@ from .models import (
 from .config import AppConfiguration
 from .services.graph_service import GraphService
 from . import utils
-from faststream.rabbit import RabbitBroker
 from faststream.rabbit.fastapi import RabbitRouter, Logger
 import asyncio
 
@@ -24,7 +23,7 @@ config = AppConfiguration()
 API_URL = config.API_URL
 
 router = RabbitRouter(config.AMQP_URL, fail_fast=False)
-broker = RabbitBroker(config.AMQP_URL, fail_fast=False)
+broker = router.broker
 
 job_status_subscriptions: dict[UUID, list[asyncio.Queue]] = {}
 

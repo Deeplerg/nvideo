@@ -3,7 +3,6 @@ from datetime import timedelta
 from typing import Annotated
 from fastapi import FastAPI, Depends, HTTPException
 import os
-from faststream.rabbit import RabbitBroker
 from faststream.rabbit.fastapi import RabbitRouter, Logger
 
 from sqlmodel import Session, select, create_engine
@@ -34,7 +33,7 @@ async def lifespan(app: FastAPI):
     yield
 
 router = RabbitRouter(AppConfiguration.AMQP_URL, fail_fast=False)
-broker = RabbitBroker(AppConfiguration.AMQP_URL, fail_fast=False)
+broker = router.broker
 app = FastAPI(lifespan=lifespan)
 app.include_router(router)
 

@@ -1,6 +1,5 @@
 ﻿from fastapi import FastAPI, Depends
 from fastapi_utils.tasks import repeat_every
-from faststream.rabbit import RabbitBroker
 from faststream.rabbit.fastapi import RabbitRouter, Logger
 from ollama import AsyncClient
 from .services.LanguageService import LanguageService, ChunkSummaryResponse
@@ -8,7 +7,7 @@ from .config import AppConfiguration
 from .models import *
 
 router = RabbitRouter(AppConfiguration.AMQP_URL, fail_fast=False)
-broker = RabbitBroker(AppConfiguration.AMQP_URL, fail_fast=False)
+broker = router.broker
 app = FastAPI()
 app.include_router(router)
 

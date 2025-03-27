@@ -31,22 +31,14 @@ steps:
       - /kaniko/executor 
         --destination="$API_IMAGE_NAME" 
         --context="api_service" 
-        --dockerfile="api_service/Dockerfile" 
-        --cache="true" 
-        --cache-repo="$REGISTRY/nvideo-api/cache" 
-        --cache-copy-layers="true" 
-        --cache-run-layers="true"
+        --dockerfile="api_service/Dockerfile"
 
       - |
         echo Building and pushing Web service: "$WEB_IMAGE_NAME"
       - /kaniko/executor 
         --destination="$WEB_IMAGE_NAME" 
         --context="web_service" 
-        --dockerfile="web_service/Dockerfile" 
-        --cache="true" 
-        --cache-repo="$REGISTRY/nvideo-web/cache" 
-        --cache-copy-layers="true" 
-        --cache-run-layers="true"
+        --dockerfile="web_service/Dockerfile"
 
   - name: clone-infra
     image: alpine/git

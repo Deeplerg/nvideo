@@ -74,7 +74,7 @@ steps:
       - git config user.email "drone@deeplerg.dev"
       - git config user.name "Drone"
       - git add .
-      - git commit -am "Update image tags" --author="Drone <drone@deeplerg.dev>"
+      - git commit -am "Update image tags" --author="Drone <drone@deeplerg.dev>" --allow-empty
       - git push
 
 trigger:

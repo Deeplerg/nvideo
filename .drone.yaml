@@ -46,7 +46,6 @@ steps:
         JSON="{ \"auths\": { \"$REGISTRY\": { \"auth\": \"$AUTH\" } } }"
       - echo $JSON > "/kaniko/.docker/config.json"
 
-      - echo Building and pushing Web service: "$WEB_IMAGE_NAME"
       - /kaniko/executor --destination="$WEB_IMAGE_NAME" --context="." --dockerfile="web_service/Dockerfile" --cache="true" --cache-repo="$REGISTRY/nvideo-web/cache" --cache-copy-layers="true" --cache-run-layers="true"
 
 
@@ -69,9 +68,7 @@ steps:
 
       - cd nvideo-infra/kustomization/prod
 
-      - echo Updating Kustomize image for API: "$API_IMAGE_NAME"
       - kustomize edit set image nvideo-api-image-name-placeholder="$API_IMAGE_NAME"
-      - echo Updating Kustomize image for Web: "$WEB_IMAGE_NAME"
       - kustomize edit set image nvideo-web-image-name-placeholder="$WEB_IMAGE_NAME"
 
   - name: push-infra-changes

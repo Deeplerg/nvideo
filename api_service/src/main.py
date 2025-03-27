@@ -2,29 +2,11 @@
 from datetime import timedelta
 from typing import Annotated
 from fastapi import FastAPI, Depends, HTTPException
-import os
 from faststream.rabbit.fastapi import RabbitRouter, Logger
-
 from sqlmodel import Session, select, create_engine
-
+from config import AppConfiguration
 from models import *
 from database_models import *
-
-
-class AppConfiguration:
-    __RMQ_USER: str = os.getenv("RABBITMQ_USER")
-    __RMQ_PASS: str = os.getenv("RABBITMQ_PASS")
-    __RMQ_HOST: str = os.getenv("RABBITMQ_HOST")
-    __RMQ_PORT: str = os.getenv("RABBITMQ_PORT")
-    AMQP_URL: str = f"amqp://{__RMQ_USER}:{__RMQ_PASS}@{__RMQ_HOST}:{__RMQ_PORT}/"
-    __DB_USER: str = os.getenv("POSTGRES_USER")
-    __DB_PASS: str = os.getenv("POSTGRES_PASSWORD")
-    __DB_HOST: str = os.getenv("POSTGRES_HOST")
-    __DB_PORT: str = os.getenv("POSTGRES_PORT")
-    __DB_NAME: str = os.getenv("POSTGRES_DB")
-    DATABASE_URL = f"postgresql+psycopg://{__DB_USER}:{__DB_PASS}@{__DB_HOST}:{__DB_PORT}/{__DB_NAME}"
-    MODEL_THRESHOLD: int = int(os.getenv("MODEL_AVAILABILITY_THRESHOLD", "30"))
-    ROOT_PATH: str = os.getenv("API_PATH", "/")
 
 
 engine = create_engine(AppConfiguration.DATABASE_URL, client_encoding="utf8")

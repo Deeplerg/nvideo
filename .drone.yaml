@@ -2,6 +2,7 @@
 kind: pipeline
 type: kubernetes
 name: prod-build-push
+
 steps:
   - name: build-push
     image: gcr.io/kaniko-project/executor:debug
@@ -18,18 +19,23 @@ steps:
       - TAG=$BRANCH-$COMMIT
       - API_IMAGE_NAME=$REGISTRY/nvideo-api:$TAG
       - WEB_IMAGE_NAME=$REGISTRY/nvideo-web:$TAG
+
       - AUTH=$(echo -n $USERNAME:$PASSWORD | base64 -w 0)
       - |
         JSON="{ \"auths\": { \"$REGISTRY\": { \"auth\": \"$AUTH\" } } }"
       - echo $JSON > "/kaniko/.docker/config.json"
+
       - echo Building and pushing API service: $API_IMAGE_NAME
       - /kaniko/executor --destination="$API_IMAGE_NAME" --context="." --dockerfile="api_service/Dockerfile" --cache="true" --cache-repo="$REGISTRY/nvideo-api/cache" --cache-copy-layers="true" --cache-run-layers="true"
+
       - echo Building and pushing Web service: $WEB_IMAGE_NAME
       - /kaniko/executor --destination="$WEB_IMAGE_NAME" --context="." --dockerfile="web_service/Dockerfile" --cache="true" --cache-repo="$REGISTRY/nvideo-web/cache" --cache-copy-layers="true" --cache-run-layers="true"
+
   - name: clone-infra
     image: alpine/git
     commands:
       - git clone https://github.com/Deeplerg/nvideo-infra
+
   - name: update-infra
     image: registry.k8s.io/kustomize/kustomize:v5.0.0
     environment:
@@ -41,11 +47,14 @@ steps:
       - TAG=$BRANCH-$COMMIT
       - API_IMAGE_NAME=$REGISTRY/nvideo-api:$TAG
       - WEB_IMAGE_NAME=$REGISTRY/nvideo-web:$TAG
+
       - cd nvideo-infra/kustomization/prod
+
       - echo Updating Kustomize image for API: $API_IMAGE_NAME
       - kustomize edit set image nvideo-api-image-name-placeholder=$API_IMAGE_NAME
       - echo Updating Kustomize image for Web: $WEB_IMAGE_NAME
       - kustomize edit set image nvideo-web-image-name-placeholder=$WEB_IMAGE_NAME
+
   - name: push-infra-changes
     image: alpine/git
     commands:
@@ -56,15 +65,19 @@ steps:
       - git add .
       - git commit -am "Update image tags" --author="Drone <drone@deeplerg.dev>"
       - git push
+
 trigger:
   branch:
     - main
   event:
     - push
+
+
 ---
 kind: pipeline
 type: kubernetes
 name: prod-build-only
+
 steps:
   - name: build-api-web-no-push
     image: gcr.io/kaniko-project/executor:debug
@@ -74,6 +87,7 @@ steps:
 
       - echo "Building Web service (no push)"
       - /kaniko/executor --no-push --context="." --dockerfile="web_service/Dockerfile"
+
 trigger:
   branch:
     - main

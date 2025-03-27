@@ -1,7 +1,11 @@
 import os
 
 class AppConfiguration:
-    AMQP_URL: str = os.getenv("AMQP_URL")
+    __RMQ_USER: str = os.getenv("RABBITMQ_USER")
+    __RMQ_PASS: str = os.getenv("RABBITMQ_PASS")
+    __RMQ_HOST: str = os.getenv("RABBITMQ_HOST")
+    __RMQ_PORT: str = os.getenv("RABBITMQ_PORT")
+    AMQP_URL: str = f"amqp://{__RMQ_USER}:{__RMQ_PASS}@{__RMQ_HOST}:{__RMQ_PORT}/"
     GRAPH_EMBED_MODEL : str = os.getenv("GRAPH_EMBED_MODEL")
     GRAPH_EMBED_MODEL_DIR : str = os.getenv("GRAPH_EMBED_MODEL_DIR")
     GRAPH_USE_PCA : bool = os.getenv("GRAPH_USE_PCA") == "True"

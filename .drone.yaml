@@ -15,10 +15,11 @@ steps:
         from_secret: registry_address
     commands:
       - COMMIT=${DRONE_COMMIT_SHA:0:8}
-      - BRANCH=main
+      - RAW_BRANCH=${DRONE_BRANCH}
+      - BRANCH=$(echo $RAW_BRANCH | sed 's/[^a-zA-Z0-9]/-/g')
       - TAG=$BRANCH-$COMMIT
-      - API_IMAGE_NAME="$REGISTRY/nvideo-api:$TAG
-      - WEB_IMAGE_NAME="$REGISTRY/nvideo-web:$TAG
+      - API_IMAGE_NAME=$REGISTRY/nvideo-api:$TAG
+      - WEB_IMAGE_NAME=$REGISTRY/nvideo-web:$TAG
 
       - AUTH=$(echo -n $USERNAME:$PASSWORD | base64 -w 0)
       - |

@@ -26,26 +26,10 @@ steps:
       - echo $JSON > "/kaniko/.docker/config.json"
 
       - echo "Building and pushing API service: $API_IMAGE_NAME"
-      - >
-        /kaniko/executor
-        --destination="$API_IMAGE_NAME"
-        --context="."
-        --dockerfile="api_service/Dockerfile"
-        --cache="true"
-        --cache-repo="$REGISTRY/nvideo-api/cache"
-        --cache-copy-layers="true"
-        --cache-run-layers="true"
+      - /kaniko/executor --destination="$API_IMAGE_NAME" --context="." --dockerfile="api_service/Dockerfile" --cache="true" --cache-repo="$REGISTRY/nvideo-api/cache" --cache-copy-layers="true" --cache-run-layers="true"
 
       - echo "Building and pushing Web service: $WEB_IMAGE_NAME"
-      - >
-        /kaniko/executor
-        --destination="$WEB_IMAGE_NAME"
-        --context="."
-        --dockerfile="web_service/Dockerfile"
-        --cache="true"
-        --cache-repo="$REGISTRY/nvideo-web/cache"
-        --cache-copy-layers="true"
-        --cache-run-layers="true"
+      - /kaniko/executor --destination="$WEB_IMAGE_NAME" --context="." --dockerfile="web_service/Dockerfile" --cache="true" --cache-repo="$REGISTRY/nvideo-web/cache" --cache-copy-layers="true" --cache-run-layers="true"
 
   - name: clone-infra
     image: alpine/git
@@ -99,18 +83,10 @@ steps:
     image: gcr.io/kaniko-project/executor:debug
     commands:
       - echo "Building API service (no push)"
-      - >
-        /kaniko/executor
-        --no-push
-        --context="."
-        --dockerfile="api_service/Dockerfile"
+      - /kaniko/executor --no-push --context="." --dockerfile="api_service/Dockerfile"
 
       - echo "Building Web service (no push)"
-      - >
-        /kaniko/executor
-        --no-push
-        --context="."
-        --dockerfile="web_service/Dockerfile"
+      - /kaniko/executor --no-push --context="." --dockerfile="web_service/Dockerfile"
 
 trigger:
   branch:

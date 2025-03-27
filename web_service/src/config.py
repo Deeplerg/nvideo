@@ -1,4 +1,5 @@
 import os
+import urllib.parse
 
 class AppConfiguration:
     __RMQ_USER: str = os.getenv("RABBITMQ_USER")
@@ -9,5 +10,6 @@ class AppConfiguration:
     __API_PROTO: str = os.getenv("API_PROTO", "http")
     __API_HOST: str = os.getenv("API_HOST", "api")
     __API_PORT: str = os.getenv("API_PORT", "8000")
-    __API_PATH: str = os.getenv("API_PATH", "")
-    API_URL: str = f"{__API_PROTO}://{__API_HOST}:{__API_PORT}{__API_PATH}"
+    __API_PATH: str = os.getenv("API_PATH", "/")
+    __API_BASE: str = f"{__API_PROTO}://{__API_HOST}:{__API_PORT}"
+    API_URL: str = urllib.parse.urljoin(__API_BASE, __API_PATH)

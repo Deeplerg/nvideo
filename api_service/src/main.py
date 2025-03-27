@@ -24,6 +24,7 @@ class AppConfiguration:
     __DB_NAME: str = os.getenv("POSTGRES_DB")
     DATABASE_URL = f"postgresql+psycopg://{__DB_USER}:{__DB_PASS}@{__DB_HOST}:{__DB_PORT}/{__DB_NAME}"
     MODEL_THRESHOLD: int = int(os.getenv("MODEL_AVAILABILITY_THRESHOLD", "30"))
+    ROOT_PATH: str = os.getenv("API_PATH", "/")
 
 
 engine = create_engine(AppConfiguration.DATABASE_URL, client_encoding="utf8")
@@ -43,7 +44,10 @@ async def lifespan(app: FastAPI):
 
 router = RabbitRouter(AppConfiguration.AMQP_URL, fail_fast=False)
 broker = router.broker
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    lifespan=lifespan,
+    root_path=AppConfiguration.ROOT_PATH
+)
 app.include_router(router)
 
 

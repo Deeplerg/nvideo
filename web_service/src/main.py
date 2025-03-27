@@ -1,3 +1,4 @@
+import urllib.parse
 from fastapi import FastAPI, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -46,7 +47,7 @@ async def shutdown_broker():
 
 async def make_api_request(path: str, method: str = "GET", json_data: dict | None = None):
     async with httpx.AsyncClient(timeout=30.0) as client:
-        url = f"{API_URL}{path}"
+        url = urllib.parse.urljoin(API_URL, path)
         try:
             if method == "GET":
                 response = await client.get(url)

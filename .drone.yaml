@@ -25,7 +25,6 @@ steps:
       - echo $JSON > "/kaniko/.docker/config.json"
 
       - echo Building and pushing API service: "$API_IMAGE_NAME"
-      - /kaniko/executor --destination="$API_IMAGE_NAME" --context="." --dockerfile="api_service/Dockerfile" --cache="true" --cache-repo="$REGISTRY/nvideo-api/cache" --cache-copy-layers="true" --cache-run-layers="true"
 
   - name: build-push-web
     image: gcr.io/kaniko-project/executor:debug

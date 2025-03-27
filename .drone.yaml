@@ -4,7 +4,7 @@ type: kubernetes
 name: prod-build-push
 
 steps:
-  - name: build-push-api
+  - name: build-push
     image: gcr.io/kaniko-project/executor:debug
     environment:
       USERNAME:
@@ -18,6 +18,7 @@ steps:
       - BRANCH=main
       - TAG=$BRANCH-$COMMIT
       - API_IMAGE_NAME="$REGISTRY/nvideo-api:$TAG
+      - WEB_IMAGE_NAME="$REGISTRY/nvideo-web:$TAG
 
       - AUTH=$(echo -n $USERNAME:$PASSWORD | base64 -w 0)
       - |
@@ -28,30 +29,9 @@ steps:
         echo Building and pushing API service: $API_IMAGE_NAME
       - /kaniko/executor --destination="$API_IMAGE_NAME" --context="." --dockerfile="api_service/Dockerfile" --cache="true" --cache-repo="$REGISTRY/nvideo-api/cache" --cache-copy-layers="true" --cache-run-layers="true"
 
-  - name: build-push-web
-    image: gcr.io/kaniko-project/executor:debug
-    environment:
-      USERNAME:
-        from_secret: registry_username
-      PASSWORD:
-        from_secret: registry_password
-      REGISTRY:
-        from_secret: registry_address
-    commands:
-      - COMMIT=${DRONE_COMMIT_SHA:0:8}
-      - BRANCH=main
-      - TAG=$BRANCH-$COMMIT
-      - WEB_IMAGE_NAME="$REGISTRY/nvideo-web:$TAG
-
-      - AUTH=$(echo -n $USERNAME:$PASSWORD | base64 -w 0)
-      - |
-        JSON="{ \"auths\": { \"$REGISTRY\": { \"auth\": \"$AUTH\" } } }"
-      - echo $JSON > "/kaniko/.docker/config.json"
-
       - |
         echo Building and pushing Web service: "$WEB_IMAGE_NAME"
       - /kaniko/executor --destination="$WEB_IMAGE_NAME" --context="." --dockerfile="web_service/Dockerfile" --cache="true" --cache-repo="$REGISTRY/nvideo-web/cache" --cache-copy-layers="true" --cache-run-layers="true"
-
 
   - name: clone-infra
     image: alpine/git

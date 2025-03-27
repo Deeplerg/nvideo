@@ -4,9 +4,9 @@ from typing import Annotated
 from fastapi import FastAPI, Depends, HTTPException
 from faststream.rabbit.fastapi import RabbitRouter, Logger
 from sqlmodel import Session, select, create_engine
-from config import AppConfiguration
-from models import *
-from database_models import *
+from .config import AppConfiguration
+from .models import *
+from .database_models import *
 
 
 engine = create_engine(AppConfiguration.DATABASE_URL, client_encoding="utf8")

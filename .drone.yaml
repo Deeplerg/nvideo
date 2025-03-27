@@ -24,7 +24,7 @@ steps:
         JSON="{ \"auths\": { \"$REGISTRY\": { \"auth\": \"$AUTH\" } } }"
       - echo $JSON > "/kaniko/.docker/config.json"
 
-      - echo Building and pushing API service: "$API_IMAGE_NAME"
+
 
   - name: build-push-web
     image: gcr.io/kaniko-project/executor:debug

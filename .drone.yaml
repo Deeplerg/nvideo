@@ -67,7 +67,7 @@ steps:
 
   - name: update-infra
     image: registry.k8s.io/kustomize/kustomize:v5.0.0
-    depends-on:
+    depends_on:
       - build-push-api
       - build-push-web
       - clone-infra
@@ -92,7 +92,7 @@ steps:
 
   - name: push-infra-changes
     image: alpine/git
-    depends-on:
+    depends_on:
       - update-infra
     commands:
       - cd nvideo-infra
@@ -118,7 +118,7 @@ name: prod-build-only
 steps:
   - name: build-no-push-api
     image: gcr.io/kaniko-project/executor:debug
-    depends-on:
+    depends_on:
 
     commands:
       - echo "Building API service"
@@ -129,7 +129,7 @@ steps:
 
   - name: build-no-push-web
     image: gcr.io/kaniko-project/executor:debug
-    depends-on:
+    depends_on:
 
     commands:
       - echo "Building Web service"

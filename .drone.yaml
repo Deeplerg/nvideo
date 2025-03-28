@@ -67,10 +67,6 @@ steps:
 
   - name: update-infra
     image: registry.k8s.io/kustomize/kustomize:v5.0.0
-    depends_on:
-      - build-push-api
-      - build-push-web
-      - clone-infra
     environment:
       REGISTRY:
         from_secret: registry_address
@@ -93,6 +89,9 @@ steps:
   - name: push-infra-changes
     image: alpine/git
     depends_on:
+      - build-push-api
+      - build-push-web
+      - clone-infra
       - update-infra
     commands:
       - cd nvideo-infra

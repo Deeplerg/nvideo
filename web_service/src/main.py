@@ -165,7 +165,7 @@ async def job_status_event_generator(request: Request, job_id: UUID):
                  break
 
             try:
-                status_update = await asyncio.wait_for(queue.get(), timeout=30)
+                status_update = await asyncio.wait_for(queue.get(), timeout=3)
                 print(f"Sending status '{status_update}' for job {job_id}")
                 yield {
                     "event": "status_update",

@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  ollama:
+    image: ollama/ollama:0.6.2
+    env_file: .env
+    volumes:
+      - local-models:/root/.ollama
+    networks:
+      - app-network
+    ports:
+      - "11434:11434"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+
+  local-transcription-service:
+    build: ./local_transcription_service
+    env_file:
+      - ".env"
+      - ".remote.env"
+    ports:
+      - "8001:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    networks:
+      - app-network
+    volumes:
+      - local-models:/models
+
+  local-language-service:
+    build: ./local_language_service
+    env_file:
+      - ".env"
+      - ".remote.env"
+    ports:
+      - "8002:8000"
+    networks:
+      - app-network
+
+  local-graph-service:
+    build: ./local_graph_service
+    env_file:
+      - ".env"
+      - ".remote.env"
+    ports:
+      - "8003:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    networks:
+      - app-network
+    depends_on:
+      - ollama
+    volumes:
+      - local-models:/models
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  rabbitmq-data:
+  local-models:

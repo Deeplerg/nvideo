@@ -67,6 +67,8 @@ steps:
 
   - name: update-infra
     image: registry.k8s.io/kustomize/kustomize:v5.0.0
+    depends_on:
+      - clone-infra
     environment:
       REGISTRY:
         from_secret: registry_address

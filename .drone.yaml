@@ -4,7 +4,7 @@ type: kubernetes
 name: prod-build-push
 
 steps:
-  - name: build-push
+  - name: build-push-api
     image: gcr.io/kaniko-project/executor:debug
     environment:
       USERNAME:
@@ -19,7 +19,6 @@ steps:
       - BRANCH=$(echo $RAW_BRANCH | sed 's/[^a-zA-Z0-9]/-/g')
       - TAG=$BRANCH-$COMMIT
       - API_IMAGE_NAME=$REGISTRY/nvideo-api:$TAG
-      - WEB_IMAGE_NAME=$REGISTRY/nvideo-web:$TAG
 
       - AUTH=$(echo -n $USERNAME:$PASSWORD | base64 -w 0)
       - |
@@ -32,6 +31,27 @@ steps:
         --destination="$API_IMAGE_NAME" 
         --context="api_service" 
         --dockerfile="api_service/Dockerfile"
+
+  - name: build-push-web
+    image: gcr.io/kaniko-project/executor:debug
+    environment:
+      USERNAME:
+        from_secret: registry_username
+      PASSWORD:
+        from_secret: registry_password
+      REGISTRY:
+        from_secret: registry_address
+    commands:
+      - COMMIT=${DRONE_COMMIT_SHA:0:8}
+      - RAW_BRANCH=${DRONE_BRANCH}
+      - BRANCH=$(echo $RAW_BRANCH | sed 's/[^a-zA-Z0-9]/-/g')
+      - TAG=$BRANCH-$COMMIT
+      - WEB_IMAGE_NAME=$REGISTRY/nvideo-web:$TAG
+
+      - AUTH=$(echo -n $USERNAME:$PASSWORD | base64 -w 0)
+      - |
+        JSON="{ \"auths\": { \"$REGISTRY\": { \"auth\": \"$AUTH\" } } }"
+      - echo $JSON > "/kaniko/.docker/config.json"
 
       - |
         echo Building and pushing Web service: "$WEB_IMAGE_NAME"
@@ -47,6 +67,10 @@ steps:
 
   - name: update-infra
     image: registry.k8s.io/kustomize/kustomize:v5.0.0
+    depends-on:
+      - build-push-api
+      - build-push-web
+      - clone-infra
     environment:
       REGISTRY:
         from_secret: registry_address
@@ -68,6 +92,8 @@ steps:
 
   - name: push-infra-changes
     image: alpine/git
+    depends-on:
+      - update-infra
     commands:
       - cd nvideo-infra
       - git checkout main
@@ -90,8 +116,10 @@ type: kubernetes
 name: prod-build-only
 
 steps:
-  - name: build-no-push
+  - name: build-no-push-api
     image: gcr.io/kaniko-project/executor:debug
+    depends-on:
+
     commands:
       - echo "Building API service"
       - /kaniko/executor 
@@ -99,6 +127,11 @@ steps:
         --context="api_service" 
         --dockerfile="api_service/Dockerfile"
 
+  - name: build-no-push-web
+    image: gcr.io/kaniko-project/executor:debug
+    depends-on:
+
+    commands:
       - echo "Building Web service"
       - /kaniko/executor 
         --no-push 

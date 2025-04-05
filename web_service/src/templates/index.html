@@ -170,23 +170,42 @@
             graph: document.getElementById('model-selection-graph')
         };
 
-        const videoIdInput = document.getElementById('video-id-input');
+const videoIdInput = document.getElementById('video-id-input');
         const videoIdError = document.getElementById("video-id-error");
         const createJobButton = document.querySelector('#create-job-form button[type="submit"]');
+        const defaultHelpText = videoIdError.dataset.defaultHelp; // Получаем дефолтный текст из data-атрибута
+
+        function resetVideoIdErrorToDefault() {
+            videoIdError.textContent = defaultHelpText;
+            videoIdError.classList.remove('is-danger'); // Убираем класс ошибки, если был
+            videoIdError.classList.add('help'); // Возвращаем класс help
+            videoIdError.style.display = 'block'; // Показываем сообщение
+        }
 
         videoIdInput.addEventListener('input', function() {
             createJobButton.disabled = true;
             const inputValue = videoIdInput.value;
             let videoId = inputValue;
-            let isYouTubeURL = false; // Флаг для проверки, является ли URL YouTube
-            if (videoIdError) {
-                videoIdError.style.display = 'none'; // Скрываем сообщение об ошибке при каждом вводе
+            let isYouTubeURL = false;
+            let errorDisplayed = false; // Флаг, чтобы отслеживать, была ли уже показана ошибка
+
+            if (inputValue.trim() === '') {
+                resetVideoIdErrorToDefault();
+                return;
             }
 
-
-            if (inputValue.length > 10) {
-                createJobButton.disabled = false;
+            // Если ID видео меньше 11 знаков и это не https:// и http://
+            if (inputValue.length < 11 && !inputValue.startsWith('http://') && !inputValue.startsWith('https://')) {
+                videoIdError.textContent = "ID видео должен быть не менее 11 символов.";
+                videoIdError.classList.remove('help');
+                videoIdError.classList.add('is-danger');
+                videoIdError.style.display = 'block';
+                errorDisplayed = true;
+                return;
+            } else {
+                videoIdError.style.display = 'none'; // Если не предыдущее условие, то скрываем сообщение об ошибке
             }
+
 
             if (inputValue.startsWith('http://') || inputValue.startsWith('https://')) {
                 try {
@@ -197,32 +216,48 @@
 
                     if (hostname.includes('youtu.be')) {
                         videoId = pathname.substring(1);
-                        isYouTubeURL = true; // Это youtu.be URL
+                        isYouTubeURL = true;
                     } else if (hostname.includes('youtube.com') && pathname === '/watch') {
                         videoId = params.get('v');
-                        isYouTubeURL = true; // Это youtube.com/watch URL
+                        isYouTubeURL = true;
                     }
 
-                    if (!isYouTubeURL) { // Если это URL, но не распознанный формат YouTube URL
-                        throw new Error("Неверный формат ссылки YouTube"); // Вызываем ошибку для не-YouTube URL
+                    if (!isYouTubeURL) {
+                        throw new Error("Неверный формат ссылки YouTube.");
                     }
 
                     if (videoId) {
                         videoIdInput.value = videoId;
+                        resetVideoIdErrorToDefault(); // Успешно извлекли. Ставим в дефолт
                     } else {
-                        throw new Error("Не удалось извлечь ID видео"); // Вызываем ошибку, если ID не извлечен
+                        throw new Error("Не удалось извлечь ID видео из URL.");
                     }
 
 
                 } catch (e) {
                     createJobButton.disabled = true;
-                    console.warn("Не удалось извлечь ID видео из URL:", inputValue, e.message); // Логируем сообщение об ошибке
-                    if (videoIdError) {
-                        videoIdError.style.display = 'block'; // Показываем сообщение об ошибке в UI
-                    }
+                    console.warn("Не удалось извлечь ID видео из URL:", inputValue, e.message);
+                    videoIdError.textContent = e.message; // Выводим сообщение об ошибке из catch
+                    videoIdError.classList.remove('help');
+                    videoIdError.classList.add('is-danger');
+                    videoIdError.style.display = 'block';
+                    errorDisplayed = true;
                 }
             }
+
+            // Включаем кнопку, если не было ошибок, и длина больше 11 знаков
+            if (!errorDisplayed && videoId.length >= 11) {
+                createJobButton.disabled = false;
+                resetVideoIdErrorToDefault(); // Возвращаем подсказку в дефолтное значение
+            } else {
+                createJobButton.disabled = true;
+            }
         });
+
+        // При загрузке страницы устанавливаем дефолтное сообщение, если поле ввода пустое
+        if (videoIdInput.value.trim() === '') {
+            resetVideoIdErrorToDefault();
+        }
 
         function updateModelSelectionVisibility() {
             const jobType = jobTypeSelect.value;

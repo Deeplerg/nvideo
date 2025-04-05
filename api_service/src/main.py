@@ -159,6 +159,15 @@ async def get_user_jobs(
     return jobs
 
 
+@app.get("/users", response_model=list[UserResponse])
+async def get_users(
+        session: Annotated[Session, Depends(get_session)]
+):
+    statement = select(User)
+    users = session.exec(statement).all()
+    return users
+
+
 @app.get("/artifacts/{artifact_id}", response_model=ArtifactResponse)
 async def get_artifact(
     artifact_id: UUID,

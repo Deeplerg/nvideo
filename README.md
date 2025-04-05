@@ -1,4 +1,5 @@
 [![Build Status](https://drone.deeplerg.dev/api/badges/Deeplerg/nvideo/status.svg)](https://drone.deeplerg.dev/Deeplerg/nvideo)
+![CD Status](https://argocd.deeplerg.dev//api/badge?name=app-nvideo-prod)
 
 Uni group project.
 

@@ -149,4 +149,4 @@ trigger:
     - main
   event:
     - pull_request
-    #- push
+    - push

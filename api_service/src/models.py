@@ -37,6 +37,7 @@ class CreateUserRequest(BaseModel):
 class UserResponse(BaseModel):
     id: int
     username: str
+    created_at: datetime
 
 
 class TranscriptionRequest(BaseModel):

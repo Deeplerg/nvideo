@@ -168,6 +168,24 @@ async def get_users(
     return users
 
 
+@app.get("/users/registered_between", response_model=list[UserResponse])
+async def get_users(
+        start_time: int,
+        end_time: int,
+        session: Annotated[Session, Depends(get_session)]
+):
+    start_datetime = datetime.fromtimestamp(start_time, timezone.utc)
+    end_datetime = datetime.fromtimestamp(end_time, timezone.utc)
+
+    statement = select(User).where(
+        User.created_at >= start_datetime,
+        User.created_at <= end_datetime
+    )
+
+    users = session.exec(statement).all()
+    return users
+
+
 @app.get("/artifacts/{artifact_id}", response_model=ArtifactResponse)
 async def get_artifact(
     artifact_id: UUID,

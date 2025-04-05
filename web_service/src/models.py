@@ -10,6 +10,7 @@ class AvailableModelResponse(BaseModel):
 class UserResponse(BaseModel):
     id: int
     username: str
+    created_at: datetime
 
 class JobResponse(BaseModel):
     id: UUID

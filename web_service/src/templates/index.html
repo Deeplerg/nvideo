@@ -151,7 +151,7 @@
 
         <div class="field">
             <div class="control">
-                <button class="button is-link" type="submit" disabled>Создать задание</button>
+                <button class="button is-link" type="submit" disabled=true>Создать задание</button>
             </div>
         </div>
     </form>
@@ -172,14 +172,20 @@
 
         const videoIdInput = document.getElementById('video-id-input');
         const videoIdError = document.getElementById("video-id-error");
+        const createJobButton = document.querySelector('#create-job-form button[type="submit"]');
 
         videoIdInput.addEventListener('input', function() {
+            createJobButton.disabled = true;
             const inputValue = videoIdInput.value;
             let videoId = inputValue;
             let isYouTubeURL = false; // Флаг для проверки, является ли URL YouTube
-
             if (videoIdError) {
                 videoIdError.style.display = 'none'; // Скрываем сообщение об ошибке при каждом вводе
+            }
+
+
+            if (inputValue.length > 10) {
+                createJobButton.disabled = false;
             }
 
             if (inputValue.startsWith('http://') || inputValue.startsWith('https://')) {
@@ -209,6 +215,7 @@
 
 
                 } catch (e) {
+                    createJobButton.disabled = true;
                     console.warn("Не удалось извлечь ID видео из URL:", inputValue, e.message); // Логируем сообщение об ошибке
                     if (videoIdError) {
                         videoIdError.style.display = 'block'; // Показываем сообщение об ошибке в UI

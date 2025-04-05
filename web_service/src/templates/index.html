@@ -79,7 +79,7 @@
                 <input id="video-id-input" class="input" type="text" name="video_id" placeholder="Пример: dQw4w9WgXcQ"
                        required>
             </div>
-            <p class="help">Введите только ID видео, например, 'dQw4w9WgXcQ' из ссылки
+            <p id="video-id-error" class="help">Введите только ID видео, например, 'dQw4w9WgXcQ' из ссылки
                 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'.</p>
         </div>
 
@@ -151,7 +151,7 @@
 
         <div class="field">
             <div class="control">
-                <button class="button is-link" type="submit">Создать задание</button>
+                <button class="button is-link" type="submit" disabled>Создать задание</button>
             </div>
         </div>
     </form>
@@ -169,6 +169,53 @@
             entityRelation: document.getElementById('model-selection-entity-relation'),
             graph: document.getElementById('model-selection-graph')
         };
+
+        const videoIdInput = document.getElementById('video-id-input');
+        const videoIdError = document.getElementById("video-id-error");
+
+        videoIdInput.addEventListener('input', function() {
+            const inputValue = videoIdInput.value;
+            let videoId = inputValue;
+            let isYouTubeURL = false; // Флаг для проверки, является ли URL YouTube
+
+            if (videoIdError) {
+                videoIdError.style.display = 'none'; // Скрываем сообщение об ошибке при каждом вводе
+            }
+
+            if (inputValue.startsWith('http://') || inputValue.startsWith('https://')) {
+                try {
+                    const url = new URL(inputValue);
+                    const hostname = url.hostname;
+                    const pathname = url.pathname;
+                    const params = new URLSearchParams(url.search);
+
+                    if (hostname.includes('youtu.be')) {
+                        videoId = pathname.substring(1);
+                        isYouTubeURL = true; // Это youtu.be URL
+                    } else if (hostname.includes('youtube.com') && pathname === '/watch') {
+                        videoId = params.get('v');
+                        isYouTubeURL = true; // Это youtube.com/watch URL
+                    }
+
+                    if (!isYouTubeURL) { // Если это URL, но не распознанный формат YouTube URL
+                        throw new Error("Неверный формат ссылки YouTube"); // Вызываем ошибку для не-YouTube URL
+                    }
+
+                    if (videoId) {
+                        videoIdInput.value = videoId;
+                    } else {
+                        throw new Error("Не удалось извлечь ID видео"); // Вызываем ошибку, если ID не извлечен
+                    }
+
+
+                } catch (e) {
+                    console.warn("Не удалось извлечь ID видео из URL:", inputValue, e.message); // Логируем сообщение об ошибке
+                    if (videoIdError) {
+                        videoIdError.style.display = 'block'; // Показываем сообщение об ошибке в UI
+                    }
+                }
+            }
+        });
 
         function updateModelSelectionVisibility() {
             const jobType = jobTypeSelect.value;

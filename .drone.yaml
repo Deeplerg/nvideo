@@ -108,7 +108,12 @@ trigger:
   branch:
     - main
   event:
-    - push
+    include:
+      - promote
+      - rollback
+      # - push
+  target:
+    - production
 
 
 ---

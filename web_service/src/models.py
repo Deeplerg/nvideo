@@ -11,6 +11,7 @@ class UserResponse(BaseModel):
     id: int
     username: str
     created_at: datetime
+    role: str
 
 class JobResponse(BaseModel):
     id: UUID

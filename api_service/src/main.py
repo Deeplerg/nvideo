@@ -1,4 +1,6 @@
-﻿from contextlib import asynccontextmanager
+﻿import logging
+from asyncio import sleep
+from contextlib import asynccontextmanager
 from datetime import timedelta
 from typing import Annotated
 from fastapi import FastAPI, Depends, HTTPException
@@ -18,12 +20,40 @@ def get_session():
     with Session(engine) as session:
         yield session
 
+def set_initial_admin(session: Session):
+    admin_username = AppConfiguration.ADMIN_USER
+    if not admin_username:
+        base_logger.info("Admin user not specified")
+        return
+
+    statement = select(User).where(User.username == admin_username)
+    user = session.exec(statement).first()
+
+    if not user:
+        user = User(
+            username = admin_username,
+            role = "admin"
+        )
+        base_logger.info(f"Creating admin user {admin_username}")
+    else:
+        user.role = "admin"
+        base_logger.info(f"Setting role of {user.username} to admin")
+
+    session.add(user)
+    session.commit()
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
+    with Session(engine) as session:
+        set_initial_admin(session)
+
     await broker.start()
+
     yield
 
+
+base_logger = logging.getLogger()
 router = RabbitRouter(AppConfiguration.AMQP_URL, fail_fast=False)
 broker = router.broker
 app = FastAPI(
@@ -184,6 +214,28 @@ async def get_users(
 
     users = session.exec(statement).all()
     return users
+
+
+@app.put("/user/{user_id}/role", response_model=UserResponse)
+async def update_user_role(
+    user_id: int,
+    role_update: UpdateUserRoleRequest,
+    session: Annotated[Session, Depends(get_session)],
+    logger: Logger
+):
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.role == role_update.role:
+        return user
+
+    user.role = role_update.role
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    logger.info(f"Updated role of user {user.username} to {user.role}")
+    return user
 
 
 @app.get("/artifacts/{artifact_id}", response_model=ArtifactResponse)

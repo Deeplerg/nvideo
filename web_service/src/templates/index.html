@@ -79,7 +79,9 @@
                 <input id="video-id-input" class="input" type="text" name="video_id" placeholder="Пример: dQw4w9WgXcQ"
                        required>
             </div>
-            <p id="video-id-error" class="help">Введите только ID видео, например, 'dQw4w9WgXcQ' из ссылки
+            <p id="video-id-error" class="help" data-default-help="Введите только ID видео, например, 'dQw4w9WgXcQ' из ссылки
+            'https://www.youtube.com/watch?v=dQw4w9WgXcQ' или YouTube Shorts 'https://youtube.com/shorts/dQw4w9WgXcQ'.">
+                Введите только ID видео, например, 'dQw4w9WgXcQ' из ссылки
                 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'.</p>
         </div>
 
@@ -170,93 +172,98 @@
             graph: document.getElementById('model-selection-graph')
         };
 
-const videoIdInput = document.getElementById('video-id-input');
+        const videoIdInput = document.getElementById('video-id-input');
         const videoIdError = document.getElementById("video-id-error");
         const createJobButton = document.querySelector('#create-job-form button[type="submit"]');
-        const defaultHelpText = videoIdError.dataset.defaultHelp; // Получаем дефолтный текст из data-атрибута
+        const defaultHelpText = videoIdError.dataset.defaultHelp;
 
         function resetVideoIdErrorToDefault() {
             videoIdError.textContent = defaultHelpText;
-            videoIdError.classList.remove('is-danger'); // Убираем класс ошибки, если был
-            videoIdError.classList.add('help'); // Возвращаем класс help
-            videoIdError.style.display = 'block'; // Показываем сообщение
+            videoIdError.classList.remove('is-danger');
+            videoIdError.classList.add('help');
+        }
+
+        function validateYouTubeUrl(url) {
+            // Удаляем пробелы в начале и конце
+            url = url.trim();
+
+            // Если это просто ID (11 допустимых символов)
+            if (url.length === 11 && !/[^a-zA-Z0-9_-]/.test(url)) {
+                return url;
+            }
+
+            // Добавляем временный протокол для парсинга, если его нет
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+            }
+
+            try {
+                // Регулярное выражение для всех случаев YouTube
+                const regExp = /^(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([^#\&\?]{11})(?:[^\#\&\?]*)?$/;
+                const match = url.match(regExp);
+
+                if (match && match[1]) {
+                    return match[1];
+                }
+            } catch (e) {
+                return null;
+            }
+
+            return null;
         }
 
         videoIdInput.addEventListener('input', function() {
+            const inputValue = videoIdInput.value.trim();
             createJobButton.disabled = true;
-            const inputValue = videoIdInput.value;
-            let videoId = inputValue;
-            let isYouTubeURL = false;
-            let errorDisplayed = false; // Флаг, чтобы отслеживать, была ли уже показана ошибка
 
-            if (inputValue.trim() === '') {
+            if (inputValue === '') {
                 resetVideoIdErrorToDefault();
                 return;
             }
 
-            // Если ID видео меньше 11 знаков и это не https:// и http://
-            if (inputValue.length < 11 && !inputValue.startsWith('http://') && !inputValue.startsWith('https://')) {
-                videoIdError.textContent = "ID видео должен быть не менее 11 символов.";
+            const videoId = validateYouTubeUrl(inputValue);
+
+            if (videoId) {
+                // Показываем подсказку только для длинных URL
+                if (inputValue.length > 11 || inputValue.includes('/')) {
+                    videoIdError.textContent = "Нажмите Enter или Tab для подтверждения URL";
+                    videoIdError.classList.remove('help');
+                    videoIdError.classList.add('is-info');
+                } else {
+                    // Для чистых ID сразу разрешаем отправку
+                    resetVideoIdErrorToDefault();
+                    createJobButton.disabled = false;
+                }
+            } else {
+                videoIdError.textContent = "Неверный формат ссылки YouTube или ID видео.";
                 videoIdError.classList.remove('help');
                 videoIdError.classList.add('is-danger');
-                videoIdError.style.display = 'block';
-                errorDisplayed = true;
-                return;
-            } else {
-                videoIdError.style.display = 'none'; // Если не предыдущее условие, то скрываем сообщение об ошибке
-            }
-
-
-            if (inputValue.startsWith('http://') || inputValue.startsWith('https://')) {
-                try {
-                    const url = new URL(inputValue);
-                    const hostname = url.hostname;
-                    const pathname = url.pathname;
-                    const params = new URLSearchParams(url.search);
-
-                    if (hostname.includes('youtu.be')) {
-                        videoId = pathname.substring(1);
-                        isYouTubeURL = true;
-                    } else if (hostname.includes('youtube.com') && pathname === '/watch') {
-                        videoId = params.get('v');
-                        isYouTubeURL = true;
-                    }
-
-                    if (!isYouTubeURL) {
-                        throw new Error("Неверный формат ссылки YouTube.");
-                    }
-
-                    if (videoId) {
-                        videoIdInput.value = videoId;
-                        resetVideoIdErrorToDefault(); // Успешно извлекли. Ставим в дефолт
-                    } else {
-                        throw new Error("Не удалось извлечь ID видео из URL.");
-                    }
-
-
-                } catch (e) {
-                    createJobButton.disabled = true;
-                    console.warn("Не удалось извлечь ID видео из URL:", inputValue, e.message);
-                    videoIdError.textContent = e.message; // Выводим сообщение об ошибке из catch
-                    videoIdError.classList.remove('help');
-                    videoIdError.classList.add('is-danger');
-                    videoIdError.style.display = 'block';
-                    errorDisplayed = true;
-                }
-            }
-
-            // Включаем кнопку, если не было ошибок, и длина больше 11 знаков
-            if (!errorDisplayed && videoId.length >= 11) {
-                createJobButton.disabled = false;
-                resetVideoIdErrorToDefault(); // Возвращаем подсказку в дефолтное значение
-            } else {
-                createJobButton.disabled = true;
             }
         });
 
-        // При загрузке страницы устанавливаем дефолтное сообщение, если поле ввода пустое
-        if (videoIdInput.value.trim() === '') {
-            resetVideoIdErrorToDefault();
+
+        videoIdInput.addEventListener('blur', confirmUrl);
+        videoIdInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                confirmUrl();
+            }
+        });
+
+        function confirmUrl() {
+            const inputValue = videoIdInput.value.trim();
+            const videoId = validateYouTubeUrl(inputValue);
+
+            if (videoId) {
+                // Если это URL (с / или длиннее 11 символов), заменяем на чистый ID
+                if (inputValue.length > 11 || inputValue.includes('/')) {
+                    videoIdInput.value = videoId;
+                }
+                resetVideoIdErrorToDefault();
+                createJobButton.disabled = false;
+            } else {
+                createJobButton.disabled = true;
+            }
         }
 
         function updateModelSelectionVisibility() {

@@ -556,6 +556,7 @@ async def admin_login_get(
         error: str | None = None):
     return templates.TemplateResponse("admin/login.html", {"request": request, "error": error})
 
+
 @app.post("/admin/login", name="admin_login_post")
 async def admin_login_post(
         request: Request,
@@ -616,6 +617,7 @@ async def admin_dashboard(
         "error": display_error
     })
 
+
 @app.get("/admin/monitoring", response_class=HTMLResponse, name="admin_monitoring")
 async def admin_monitoring(
     request: Request,
@@ -627,6 +629,7 @@ async def admin_monitoring(
         "grafana_url": grafana_url,
         "admin_user_id": verified_admin_id
     })
+
 
 @app.post("/admin/user/{user_id}/set-role", name="admin_set_user_role")
 async def admin_set_user_role(

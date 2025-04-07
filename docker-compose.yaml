@@ -110,6 +110,41 @@ services:
     networks:
       - app-network
 
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    volumes:
+      - ./.compose-config/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yaml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    networks:
+      - app-network
+#    depends_on:
+#      - api
+
+  grafana:
+    image: grafana/grafana:11.6.0
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./.compose-config/grafana/provisioning:/etc/grafana/provisioning
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      # - GF_AUTH_ANONYMOUS_ENABLED=true
+      # - GF_AUTH_ANONYMOUS_ORG_ROLE=anonymous
+    depends_on:
+      - prometheus
+
 networks:
   app-network:
     driver: bridge
@@ -118,3 +153,5 @@ volumes:
   postgres-data:
   rabbitmq-data:
   local-models:
+  prometheus-data:
+  grafana-data:

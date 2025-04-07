@@ -130,6 +130,7 @@ services:
 
   grafana:
     image: grafana/grafana:11.6.0
+    env_file: .env
     volumes:
       - grafana-data:/var/lib/grafana
       - ./.compose-config/grafana/provisioning:/etc/grafana/provisioning
@@ -137,11 +138,6 @@ services:
       - "3000:3000"
     networks:
       - app-network
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      # - GF_AUTH_ANONYMOUS_ENABLED=true
-      # - GF_AUTH_ANONYMOUS_ORG_ROLE=anonymous
     depends_on:
       - prometheus
 

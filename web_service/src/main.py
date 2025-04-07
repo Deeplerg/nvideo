@@ -549,6 +549,7 @@ async def job_status_page(
     return templates.TemplateResponse("job_status.html", context)
 
 
+@app.get("/admin", response_class=HTMLResponse)
 @app.get("/admin/login", response_class=HTMLResponse, name="admin_login_get")
 async def admin_login_get(
         request: Request,

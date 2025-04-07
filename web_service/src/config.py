@@ -14,3 +14,4 @@ class AppConfiguration:
     __API_PATH: str = os.getenv("API_PATH", "/")
     __API_BASE: str = f"{__API_PROTO}://{__API_HOST}:{__API_PORT}"
     API_URL: str = urllib.parse.urljoin(__API_BASE, __API_PATH)
+    GRAFANA_DASHBOARD_URL: str | None = os.getenv("WEB_GRAFANA_DASHBOARD_URL")

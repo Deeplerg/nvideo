@@ -1,0 +1,17 @@
+{% extends "admin_base.html" %}
+
+{% block admin_content %}
+<h1 class="title">Мониторинг</h1>
+
+<div class="box">
+    {% if grafana_url %}
+        <iframe id="grafana-dashboard" src="{{ grafana_url }}" title="Grafana Dashboard">
+            Ваш браузер не поддерживает iframe. Перейдите по ссылке: <a href="{{ grafana_url }}" target="_blank">{{ grafana_url }}</a>
+        </iframe>
+    {% else %}
+        <div class="notification is-warning">
+            Панель графов не была настроена.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

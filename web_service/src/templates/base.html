@@ -166,6 +166,18 @@
                 <strong>nvideo</strong>
             </a>
         </div>
+        <div class="navbar-menu">
+            <div class="navbar-end">
+                {% if is_admin %}
+                <div class="navbar-item">
+                    <a class="button is-warning is-small" href="{{ url_for('admin_login_get') }}">
+                        <span class="icon is-small"><i class="fas fa-shield-alt"></i></span>
+                        <span>Панель администратора</span>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </nav>
 <section class="section">

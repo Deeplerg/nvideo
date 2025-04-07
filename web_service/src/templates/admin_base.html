@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>nvideo Панель</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        iframe#grafana-dashboard {
+            width: 100%;
+            height: 80vh;
+            border: 1px solid #dbdbdb;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar is-primary" role="navigation" aria-label="main navigation">
+        <div class="container">
+            <div class="navbar-brand">
+                <a class="navbar-item"
+                       href="{{ url_for('admin_dashboard')
+                                .include_query_params(admin_user_id=admin_user_id)
+                                if admin_user_id
+                                else url_for('admin_login_get') }}">
+                    <strong>nvideo Панель</strong>
+                </a>
+            </div>
+             <div class="navbar-menu">
+                <div class="navbar-start">
+                    <a class="navbar-item"
+                       href="{{ url_for('admin_dashboard')
+                                .include_query_params(admin_user_id=admin_user_id)
+                                if admin_user_id
+                                else url_for('admin_login_get') }}">
+                        Пользователи
+                    </a>
+                    <a class="navbar-item"
+                       href="{{ url_for('admin_monitoring')
+                                .include_query_params(admin_user_id=admin_user_id)
+                                if admin_user_id
+                                else url_for('admin_login_get') }}">
+                        Мониторинг
+                    </a>
+                </div>
+                <div class="navbar-end">
+                    <div class="navbar-item">
+                         <a class="button is-light is-small" href="{{ url_for('index') }}">
+                            На главный сайт
+                         </a>
+                    </div>
+                     {% if admin_user_id %}
+                     <div class="navbar-item">
+                         <a class="button is-warning is-small" href="{{ url_for('admin_login_get') }}">
+                            Выйти
+                         </a>
+                     </div>
+                     {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="section">
+        <div class="container">
+            {% if message %}
+                <div class="notification is-success is-light">{{ message }}</div>
+            {% endif %}
+            {% if error %}
+                <div class="notification is-danger is-light">{{ error }}</div>
+            {% endif %}
+
+            {% block admin_content %}
+            {% endblock %}
+        </div>
+    </section>
+
+    {% block admin_scripts %}
+    {% endblock %}
+</body>
+</html>

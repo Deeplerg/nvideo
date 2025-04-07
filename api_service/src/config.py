@@ -15,3 +15,4 @@ class AppConfiguration:
     DATABASE_URL = f"postgresql+psycopg://{__DB_USER}:{__DB_PASS}@{__DB_HOST}:{__DB_PORT}/{__DB_NAME}"
     MODEL_THRESHOLD: int = int(os.getenv("MODEL_AVAILABILITY_THRESHOLD", "30"))
     ROOT_PATH: str = os.getenv("API_PATH", "/")
+    ADMIN_USER: str | None = os.getenv("API_ADMIN_USER")

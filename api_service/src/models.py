@@ -2,7 +2,7 @@
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class CreateJobRequest(BaseModel):
@@ -38,6 +38,10 @@ class UserResponse(BaseModel):
     id: int
     username: str
     created_at: datetime
+    role: str
+
+class UpdateUserRoleRequest(BaseModel):
+    role: str
 
 
 class TranscriptionRequest(BaseModel):

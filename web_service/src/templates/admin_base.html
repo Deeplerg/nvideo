@@ -18,16 +18,28 @@
     <nav class="navbar is-primary" role="navigation" aria-label="main navigation">
         <div class="container">
             <div class="navbar-brand">
-                <a class="navbar-item" href="{{ url_for('admin_login_get') }}">
+                <a class="navbar-item"
+                       href="{{ url_for('admin_dashboard')
+                                .include_query_params(admin_user_id=admin_user_id)
+                                if admin_user_id
+                                else url_for('admin_login_get') }}">
                     <strong>nvideo Панель</strong>
                 </a>
             </div>
              <div class="navbar-menu">
                 <div class="navbar-start">
-                    <a class="navbar-item" href="{{ url_for('admin_dashboard') }}">
+                    <a class="navbar-item"
+                       href="{{ url_for('admin_dashboard')
+                                .include_query_params(admin_user_id=admin_user_id)
+                                if admin_user_id
+                                else url_for('admin_login_get') }}">
                         Пользователи
                     </a>
-                    <a class="navbar-item" href="{{ url_for('admin_monitoring') }}">
+                    <a class="navbar-item"
+                       href="{{ url_for('admin_monitoring')
+                                .include_query_params(admin_user_id=admin_user_id)
+                                if admin_user_id
+                                else url_for('admin_login_get') }}">
                         Мониторинг
                     </a>
                 </div>
@@ -37,6 +49,13 @@
                             На главный сайт
                          </a>
                     </div>
+                     {% if admin_user_id %}
+                     <div class="navbar-item">
+                         <a class="button is-warning is-small" href="{{ url_for('admin_login_get') }}">
+                            Выйти
+                         </a>
+                     </div>
+                     {% endif %}
                 </div>
             </div>
         </div>

@@ -9,6 +9,18 @@ from sqlmodel import Session, select, create_engine
 from .config import AppConfiguration
 from .models import *
 from .database_models import *
+from prometheus_client import Counter, make_asgi_app
+
+
+USERS_REGISTERED_COUNTER = Counter(
+    'nvideo_users_registered',
+    'Number of registered users'
+)
+TASKS_COMPLETED_COUNTER = Counter(
+    'nvideo_tasks_completed',
+    'Number of tasks completed by type',
+    ['job_type']
+)
 
 
 engine = create_engine(AppConfiguration.DATABASE_URL, client_encoding="utf8")
@@ -61,6 +73,9 @@ app = FastAPI(
     root_path=AppConfiguration.ROOT_PATH
 )
 app.include_router(router)
+
+metrics_app = make_asgi_app()
+app.mount("/metrics", metrics_app)
 
 
 async def publish_job_updated(job: Job):
@@ -155,6 +170,9 @@ async def create_user(
     session.add(user)
     session.commit()
     session.refresh(user)
+
+    USERS_REGISTERED_COUNTER.inc()
+
     return user
 
 @app.get("/user/{user_id}", response_model=UserResponse)
@@ -513,3 +531,9 @@ async def handle_graph_result(
     ), queue=f"job.completed")
 
     logger.info(f"Job {job.id} completed")
+
+
+@router.subscriber("job.completed")
+async def handle_job_completed(
+        body: JobCompleted):
+  TASKS_COMPLETED_COUNTER.labels(job_type=body.type).inc()

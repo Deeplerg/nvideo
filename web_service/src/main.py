@@ -307,7 +307,12 @@ async def get_graph_chunk(
 
 
 @app.get("/", response_class=HTMLResponse)
-async def index(request: Request, user_id: int | None = None, message: str | None = None, error: str | None = None):
+async def index(
+        request: Request,
+        user_id: int | None = None,
+        is_admin: bool = False,
+        message: str | None = None,
+        error: str | None = None):
     available_models = await fetch_available_models()
     model_map = {"transcription": [], "summary": [], "graph": [], "entity-relation": []}
     for model in available_models:
@@ -318,6 +323,8 @@ async def index(request: Request, user_id: int | None = None, message: str | Non
                 model_map[model_type].append({"value": model.name, "name": model_name})
 
     user_id = user_id or request.query_params.get('user_id')
+    is_admin_query = request.query_params.get('is_admin', 'false').lower() == 'true'
+    is_admin = is_admin or is_admin_query
     message = message or request.query_params.get('message')
     error = error or request.query_params.get('error')
     if user_id:
@@ -330,6 +337,7 @@ async def index(request: Request, user_id: int | None = None, message: str | Non
         "request": request,
         "model_map": model_map,
         "user_id": user_id,
+        "is_admin": is_admin,
         "message": message,
         "error": error
     }
@@ -372,6 +380,7 @@ async def login_user(request: Request, username: Annotated[str, Form()]):
     message = None
     error = None
     user_id = None
+    is_admin = False
     target_url: URL = request.url_for("index")
     query_params_dict = {}
 
@@ -380,6 +389,8 @@ async def login_user(request: Request, username: Annotated[str, Form()]):
         if user:
             message = f"Вы вошли как '{username}'."
             user_id = user.id
+            if user.role == "admin":
+                is_admin = True
         else:
             error = f"Пользователь '{username}' не найден. Пожалуйста, зарегистрируйтесь."
     except HTTPException as e:
@@ -391,6 +402,7 @@ async def login_user(request: Request, username: Annotated[str, Form()]):
     if message: query_params_dict["message"] = message
     if error: query_params_dict["error"] = error
     if user_id: query_params_dict["user_id"] = str(user_id)
+    if is_admin: query_params_dict["is_admin"] = "true"
 
     final_url = target_url.replace_query_params(**query_params_dict)
 

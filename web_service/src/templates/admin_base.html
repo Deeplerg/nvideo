@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>nvideo Панель</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar is-primary" role="navigation" aria-label="main navigation">
+        <div class="container">
+            <div class="navbar-brand">
+                <a class="navbar-item" href="{{ url_for('admin_login_get') }}">
+                    <strong>nvideo Панель</strong>
+                </a>
+            </div>
+             <div class="navbar-menu">
+                <div class="navbar-start">
+                </div>
+                <div class="navbar-end">
+                    <div class="navbar-item">
+                         <a class="button is-light is-small" href="{{ url_for('index') }}">
+                            На главный сайт
+                         </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="section">
+        <div class="container">
+            {% if message %}
+                <div class="notification is-success is-light">{{ message }}</div>
+            {% endif %}
+            {% if error %}
+                <div class="notification is-danger is-light">{{ error }}</div>
+            {% endif %}
+
+            {% block admin_content %}
+            {% endblock %}
+        </div>
+    </section>
+
+    {% block admin_scripts %}
+    {% endblock %}
+</body>
+</html>

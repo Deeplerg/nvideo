@@ -1,3 +1,4 @@
+import http
 import urllib.parse
 from fastapi import FastAPI, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -11,7 +12,7 @@ from starlette.datastructures import URL
 from .models import (
     AvailableModelResponse, UserResponse, JobResponse, ArtifactResponse,
     TranscriptionChunkResult, ChunkSummaryResult, GraphResult, JobStatusUpdated,
-    EntityRelationResult
+    EntityRelationResult, UpdateUserRoleRequest
 )
 from .config import AppConfiguration
 from .services.graph_service import GraphService
@@ -53,6 +54,8 @@ async def make_api_request(path: str, method: str = "GET", json_data: dict | Non
                 response = await client.get(url)
             elif method == "POST":
                 response = await client.post(url, json=json_data)
+            elif method == "PUT":
+                response = await client.put(url, json=json_data)
             else:
                 raise ValueError(f"Неподдерживаемый метод: {method}")
             response.raise_for_status()
@@ -89,6 +92,18 @@ async def fetch_available_models() -> List[AvailableModelResponse]:
 async def fetch_user_by_name(username: str) -> UserResponse | None:
     try:
         data = await make_api_request(f"/user/by-name/{username}")
+        if data:
+            return UserResponse(**data)
+        return None
+    except HTTPException as e:
+        if e.status_code == 404:
+            return None
+        raise e
+
+
+async def fetch_user_by_id(user_id: int) -> UserResponse | None:
+    try:
+        data = await make_api_request(f"/user/{user_id}")
         if data:
             return UserResponse(**data)
         return None
@@ -186,6 +201,40 @@ async def job_status_event_generator(request: Request, job_id: UUID):
             if not job_status_subscriptions[job_id]:
                 del job_status_subscriptions[job_id]
                 print(f"Removed last SSE subscription for job {job_id}")
+
+
+async def verify_admin_role(
+    request: Request,
+    logger: Logger,
+    admin_user_id: int | None
+) -> int:
+    error = None
+
+    if admin_user_id is None:
+        error = "Требуется вход администратора."
+    else:
+        try:
+            user = await fetch_user_by_id(admin_user_id)
+            if not user:
+                error = "Пользователь не найден."
+            elif user.role != "admin":
+                error = "У пользователя нет прав администратора."
+        except HTTPException as e:
+            error = f"Ошибка проверки администратора: {e.detail}"
+        except Exception as e:
+            error = "Ошибка сервера при проверке администратора."
+            logger.error(f"Unexpected error verifying admin {admin_user_id}", exc_info=True)
+
+    if error:
+        login_url = request.url_for("admin_login_get")
+        final_url = login_url.replace_query_params(error=error)
+        raise HTTPException(
+            status_code=303,
+            detail=error,
+            headers={"Location": str(final_url)}
+        )
+
+    return admin_user_id
 
 
 @app.get("/job_status_events/{job_id}")
@@ -498,6 +547,115 @@ async def job_status_page(
         "sorted_chunk_end_times": sorted_chunk_end_times,
     }
     return templates.TemplateResponse("job_status.html", context)
+
+
+@app.get("/admin/login", response_class=HTMLResponse, name="admin_login_get")
+async def admin_login_get(
+        request: Request,
+        error: str | None = None):
+    return templates.TemplateResponse("admin/login.html", {"request": request, "error": error})
+
+@app.post("/admin/login", name="admin_login_post")
+async def admin_login_post(
+        request: Request,
+        username: Annotated[str, Form()],
+        logger: Logger
+):
+    error = None
+    admin_user_id_for_redirect = None
+    try:
+        user = await fetch_user_by_name(username)
+        if user and user.role == "admin":
+            admin_user_id_for_redirect = user.id
+        else:
+            error = "Неверное имя пользователя или пользователь не администратор."
+    except HTTPException as e:
+        error = f"Ошибка API при проверке пользователя: {e.detail}"
+    except Exception as e:
+         logger.error(f"Unexpected admin login error for {username}", exc_info=True)
+         error = "Внутренняя ошибка сервера при входе."
+
+    if admin_user_id_for_redirect:
+        redirect_url = request.url_for('admin_dashboard')
+        final_url = redirect_url.replace_query_params(admin_user_id=str(admin_user_id_for_redirect))
+        return RedirectResponse(url=str(final_url), status_code=303)
+    else:
+        redirect_url = request.url_for('admin_login_get')
+        final_url = redirect_url.replace_query_params(error=error)
+        return RedirectResponse(url=str(final_url), status_code=303)
+
+
+@app.get("/admin/dashboard", response_class=HTMLResponse, name="admin_dashboard")
+async def admin_dashboard(
+    request: Request,
+    logger: Logger,
+    verified_admin_id: int = Depends(verify_admin_role),
+    message: str | None = None,
+    error: str | None = None,
+):
+    users_list = []
+    api_error = None
+    try:
+        users_data = await make_api_request("/users")
+        users_list = [UserResponse(**u) for u in users_data] if users_data else []
+    except HTTPException as e:
+        api_error = f"Не удалось загрузить пользователей: {e.detail}"
+        logger.error(api_error)
+    except Exception as e:
+         api_error = "Неожиданная ошибка при загрузке пользователей."
+         logger.error(api_error, exc_info=True)
+
+    display_error = error or api_error
+
+    return templates.TemplateResponse("admin/dashboard.html", {
+        "request": request,
+        "users": users_list,
+        "admin_user_id": verified_admin_id,
+        "message": message,
+        "error": display_error
+    })
+
+@app.post("/admin/user/{user_id}/set-role", name="admin_set_user_role")
+async def admin_set_user_role(
+    request: Request,
+    logger: Logger,
+    user_id: int,
+    role: Annotated[str, Form()],
+    verified_admin_id: int = Depends(verify_admin_role),
+):
+    message = None
+    error = None
+
+    redirect_url = request.url_for("admin_dashboard")
+    query_params_for_redirect = {"admin_user_id": str(verified_admin_id)}
+
+    if role not in ["admin", "user"]:
+         error = "Недопустимая роль."
+    elif user_id == verified_admin_id:
+         error = "Нельзя изменить свою роль."
+    else:
+        try:
+            update_payload = UpdateUserRoleRequest(role=role)
+            updated_user_data = await make_api_request(
+                path=f"/user/{user_id}/role",
+                method="PUT",
+                json_data=update_payload.model_dump()
+            )
+            updated_user = UserResponse(**updated_user_data)
+            message = f"Роль пользователя {updated_user.username} обновлена на {updated_user.role}."
+        except HTTPException as e:
+             error = f"Ошибка API при обновлении роли: {e.detail}"
+        except ValidationError as e:
+            error = f"Ошибка данных от API: {e}"
+        except Exception as e:
+            logger.error(f"Unexpected role update error for user {user_id}", exc_info=True)
+            error = "Внутренняя ошибка сервера при обновлении роли."
+
+    if message: query_params_for_redirect["message"] = message
+    if error: query_params_for_redirect["error"] = error
+    final_url = redirect_url.replace_query_params(**query_params_for_redirect)
+
+    return RedirectResponse(url=str(final_url), status_code=303)
 
 
 @router.subscriber("job.status_updated")

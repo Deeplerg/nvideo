@@ -1,0 +1,28 @@
+{% extends "admin_base.html" %}
+
+{% block admin_content %}
+<div class="columns is-centered">
+    <div class="column is-one-third">
+        <div class="box">
+            <h1 class="title has-text-centered">Вход для администратора</h1>
+            <form method="post" action="{{ url_for('admin_login_post') }}">
+                <div class="field">
+                    <label class="label" for="username">Имя пользователя</label>
+                    <div class="control has-icons-left">
+                        <input id="username" class="input" type="text" name="username" placeholder="Имя администратора" required>
+                        <span class="icon is-small is-left">
+                          <i class="fas fa-user"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="control">
+                        <button class="button is-primary is-fullwidth" type="submit">Войти</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

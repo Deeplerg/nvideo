@@ -56,8 +56,14 @@ async def make_api_request(path: str, method: str = "GET", json_data: dict | Non
                 response = await client.post(url, json=json_data)
             elif method == "PUT":
                 response = await client.put(url, json=json_data)
+            elif method == "DELETE":
+                response = await client.delete(url)
             else:
                 raise ValueError(f"Неподдерживаемый метод: {method}")
+
+            if response.status_code == 204:
+                return None
+
             response.raise_for_status()
             return response.json()
         except httpx.RequestError as e:
@@ -201,6 +207,10 @@ async def job_status_event_generator(request: Request, job_id: UUID):
             if not job_status_subscriptions[job_id]:
                 del job_status_subscriptions[job_id]
                 print(f"Removed last SSE subscription for job {job_id}")
+
+
+async def delete_user_api(user_id: int):
+    await make_api_request(f"/user/{user_id}", method="DELETE")
 
 
 async def verify_admin_role(
@@ -678,6 +688,42 @@ async def admin_set_user_role(
         except Exception as e:
             logger.error(f"Unexpected role update error for user {user_id}", exc_info=True)
             error = "Внутренняя ошибка сервера при обновлении роли."
+
+    if message: query_params_for_redirect["message"] = message
+    if error: query_params_for_redirect["error"] = error
+    final_url = redirect_url.replace_query_params(**query_params_for_redirect)
+
+    return RedirectResponse(url=str(final_url), status_code=303)
+
+
+@app.post("/admin/user/{user_id}/delete", name="admin_delete_user")
+async def admin_delete_user(
+        request: Request,
+        logger: Logger,
+        user_id: int,
+        verified_admin_id: int = Depends(verify_admin_role)
+):
+    message = None
+    error = None
+    redirect_url: URL = request.url_for("admin_dashboard")
+    query_params_for_redirect = {"admin_user_id": str(verified_admin_id)}
+
+    if user_id == verified_admin_id:
+        error = "Нельзя удалить себя."
+    else:
+        try:
+            user_to_delete = await fetch_user_by_id(user_id)
+            if not user_to_delete:
+                error = "Пользователь не найден."
+            else:
+                await delete_user_api(user_id)
+                message = f"Пользователь '{user_to_delete.username}' (ID: {user_id}) удален."
+                logger.info(message)
+        except HTTPException as e:
+            error = f"Ошибка API при удалении пользователя: {e.detail}"
+        except Exception:
+            logger.error(f"Unexpected error deleting user {user_id}", exc_info=True)
+            error = "Внутренняя ошибка сервера при удалении пользователя."
 
     if message: query_params_for_redirect["message"] = message
     if error: query_params_for_redirect["error"] = error

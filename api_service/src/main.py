@@ -256,6 +256,28 @@ async def update_user_role(
     return user
 
 
+@app.delete("/user/{user_id}", status_code=204)
+async def delete_user(
+        user_id: int,
+        session: Annotated[Session, Depends(get_session)],
+        logger: Logger
+):
+    user_to_delete = session.get(User, user_id)
+    if not user_to_delete:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    try:
+        session.delete(user_to_delete)
+        session.commit()
+        logger.info(f"Deleted user {user_id} ('{user_to_delete.username}')")
+        return
+    except Exception as e:
+        session.rollback()
+        logger.error(f"Error deleting user {user_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500,
+                            detail="Database error during user deletion.")
+
+
 @app.get("/artifacts/{artifact_id}", response_model=ArtifactResponse)
 async def get_artifact(
     artifact_id: UUID,

@@ -184,21 +184,17 @@
         }
 
         function validateYouTubeUrl(url) {
-            // Удаляем пробелы в начале и конце
             url = url.trim();
 
-            // Если это просто ID (11 допустимых символов)
             if (url.length === 11 && !/[^a-zA-Z0-9_-]/.test(url)) {
                 return url;
             }
 
-            // Добавляем временный протокол для парсинга, если его нет
             if (!url.startsWith('http://') && !url.startsWith('https://')) {
                 url = 'https://' + url;
             }
 
             try {
-                // Регулярное выражение для всех случаев YouTube
                 const regExp = /^(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([^#\&\?]{11})(?:[^\#\&\?]*)?$/;
                 const match = url.match(regExp);
 
@@ -224,13 +220,11 @@
             const videoId = validateYouTubeUrl(inputValue);
 
             if (videoId) {
-                // Показываем подсказку только для длинных URL
                 if (inputValue.length > 11 || inputValue.includes('/')) {
                     videoIdError.textContent = "Нажмите Enter или Tab для подтверждения URL";
                     videoIdError.classList.remove('help');
                     videoIdError.classList.add('is-info');
                 } else {
-                    // Для чистых ID сразу разрешаем отправку
                     resetVideoIdErrorToDefault();
                     createJobButton.disabled = false;
                 }
@@ -255,7 +249,6 @@
             const videoId = validateYouTubeUrl(inputValue);
 
             if (videoId) {
-                // Если это URL (с / или длиннее 11 символов), заменяем на чистый ID
                 if (inputValue.length > 11 || inputValue.includes('/')) {
                     videoIdInput.value = videoId;
                 }

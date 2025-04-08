@@ -79,7 +79,9 @@
                 <input id="video-id-input" class="input" type="text" name="video_id" placeholder="Пример: dQw4w9WgXcQ"
                        required>
             </div>
-            <p class="help">Введите только ID видео, например, 'dQw4w9WgXcQ' из ссылки
+            <p id="video-id-error" class="help" data-default-help="Введите только ID видео, например, 'dQw4w9WgXcQ' из ссылки
+            'https://www.youtube.com/watch?v=dQw4w9WgXcQ' или YouTube Shorts 'https://youtube.com/shorts/dQw4w9WgXcQ'.">
+                Введите только ID видео, например, 'dQw4w9WgXcQ' из ссылки
                 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'.</p>
         </div>
 
@@ -151,7 +153,7 @@
 
         <div class="field">
             <div class="control">
-                <button class="button is-link" type="submit">Создать задание</button>
+                <button class="button is-link" type="submit" disabled=true>Создать задание</button>
             </div>
         </div>
     </form>
@@ -169,6 +171,93 @@
             entityRelation: document.getElementById('model-selection-entity-relation'),
             graph: document.getElementById('model-selection-graph')
         };
+
+        const videoIdInput = document.getElementById('video-id-input');
+        const videoIdError = document.getElementById("video-id-error");
+        const createJobButton = document.querySelector('#create-job-form button[type="submit"]');
+        const defaultHelpText = videoIdError.dataset.defaultHelp;
+
+        function resetVideoIdErrorToDefault() {
+            videoIdError.textContent = defaultHelpText;
+            videoIdError.classList.remove('is-danger');
+            videoIdError.classList.add('help');
+        }
+
+        function validateYouTubeUrl(url) {
+            url = url.trim();
+
+            if (url.length === 11 && !/[^a-zA-Z0-9_-]/.test(url)) {
+                return url;
+            }
+
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+            }
+
+            try {
+                const regExp = /^(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([^#\&\?]{11})(?:[^\#\&\?]*)?$/;
+                const match = url.match(regExp);
+
+                if (match && match[1]) {
+                    return match[1];
+                }
+            } catch (e) {
+                return null;
+            }
+
+            return null;
+        }
+
+        videoIdInput.addEventListener('input', function() {
+            const inputValue = videoIdInput.value.trim();
+            createJobButton.disabled = true;
+
+            if (inputValue === '') {
+                resetVideoIdErrorToDefault();
+                return;
+            }
+
+            const videoId = validateYouTubeUrl(inputValue);
+
+            if (videoId) {
+                if (inputValue.length > 11 || inputValue.includes('/')) {
+                    videoIdError.textContent = "Нажмите Enter или Tab для подтверждения URL";
+                    videoIdError.classList.remove('help');
+                    videoIdError.classList.add('is-info');
+                } else {
+                    resetVideoIdErrorToDefault();
+                    createJobButton.disabled = false;
+                }
+            } else {
+                videoIdError.textContent = "Неверный формат ссылки YouTube или ID видео.";
+                videoIdError.classList.remove('help');
+                videoIdError.classList.add('is-danger');
+            }
+        });
+
+
+        videoIdInput.addEventListener('blur', confirmUrl);
+        videoIdInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                confirmUrl();
+            }
+        });
+
+        function confirmUrl() {
+            const inputValue = videoIdInput.value.trim();
+            const videoId = validateYouTubeUrl(inputValue);
+
+            if (videoId) {
+                if (inputValue.length > 11 || inputValue.includes('/')) {
+                    videoIdInput.value = videoId;
+                }
+                resetVideoIdErrorToDefault();
+                createJobButton.disabled = false;
+            } else {
+                createJobButton.disabled = true;
+            }
+        }
 
         function updateModelSelectionVisibility() {
             const jobType = jobTypeSelect.value;

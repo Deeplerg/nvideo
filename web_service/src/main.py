@@ -21,6 +21,8 @@ from faststream.rabbit.fastapi import RabbitRouter, Logger
 import asyncio
 
 
+base_logger = Logger(__name__)
+
 config = AppConfiguration()
 API_URL = config.API_URL
 
@@ -59,7 +61,7 @@ async def make_api_request(path: str, method: str = "GET", json_data: dict | Non
             elif method == "DELETE":
                 response = await client.delete(url)
             else:
-                raise ValueError(f"Неподдерживаемый метод: {method}")
+                raise ValueError(f"Unsupported method: {method}")
 
             if response.status_code == 204:
                 return None
@@ -67,10 +69,10 @@ async def make_api_request(path: str, method: str = "GET", json_data: dict | Non
             response.raise_for_status()
             return response.json()
         except httpx.RequestError as e:
-            print(f"Ошибка сети при запросе к {url}: {e}")
+            base_logger.error(f"Network error {url}: {e}")
             raise HTTPException(status_code=503, detail=f"Не удалось подключиться к API: {url}")
         except httpx.HTTPStatusError as e:
-            print(f"Ошибка API ({e.response.status_code}) для {url}: {e.response.text}")
+            base_logger.error(f"API error ({e.response.status_code}) for {url}: {e.response.text}")
             detail = f"Ошибка API ({e.response.status_code})."
             try:
                 api_error = e.response.json()
@@ -80,7 +82,7 @@ async def make_api_request(path: str, method: str = "GET", json_data: dict | Non
                 pass
             raise HTTPException(status_code=e.response.status_code, detail=detail)
         except Exception as e:
-            print(f"Неожиданная ошибка при запросе к API {url}: {e}")
+            base_logger.error(f"Unexpected error {url}: {e}")
             raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера при обращении к API.")
 
 
@@ -91,7 +93,7 @@ async def fetch_available_models() -> List[AvailableModelResponse]:
             return [AvailableModelResponse(**item) for item in data]
         return []
     except HTTPException:
-         print("Не удалось получить доступные модели от API.")
+         base_logger.error("Unable to retrieve available models.")
          return []
 
 
@@ -125,7 +127,7 @@ async def fetch_job(job_id: UUID) -> JobResponse:
          try:
             return JobResponse(**data)
          except ValidationError as e:
-             print(f"Ошибка валидации данных задания {job_id}: {e}")
+             base_logger.error(f"Data validation error for job {job_id}: {e}")
              raise HTTPException(status_code=500, detail="Неверный формат данных задания от API.")
     raise HTTPException(status_code=500, detail="Не удалось получить данные задания от API.")
 
@@ -137,7 +139,7 @@ async def fetch_job_artifacts(job_id: UUID) -> List[ArtifactResponse]:
             return [ArtifactResponse(**item) for item in data]
         return []
     except HTTPException as e:
-         print(f"Не удалось получить артефакты для задания {job_id}: {e.detail}")
+         base_logger.error(f"Unable to retrieve artifacts for job {job_id}: {e.detail}")
          return []
 
 
@@ -147,7 +149,7 @@ async def create_user_api(username: str) -> UserResponse:
         try:
             return UserResponse(**data)
         except ValidationError as e:
-            print(f"Ошибка валидации данных пользователя при регистрации {username}: {e}")
+            base_logger.error(f"Data validation error for {username} registration: {e}")
             raise HTTPException(status_code=500, detail="Неверный формат данных пользователя от API.")
     raise HTTPException(status_code=500, detail="Не удалось создать пользователя через API.")
 
@@ -167,7 +169,7 @@ async def create_job_api(job_type: str, video_id: str, action_models: List[str],
         try:
             return JobResponse(**data)
         except ValidationError as e:
-            print(f"Ошибка валидации данных задания при создании: {e}")
+            base_logger.error(f"Data validation error: {e}")
             raise HTTPException(status_code=500, detail="Неверный формат данных задания от API.")
     raise HTTPException(status_code=500, detail="Не удалось создать задание через API.")
 
@@ -177,36 +179,36 @@ async def job_status_event_generator(request: Request, job_id: UUID):
     if job_id not in job_status_subscriptions:
         job_status_subscriptions[job_id] = []
     job_status_subscriptions[job_id].append(queue)
-    print(f"SSE connection opened for job {job_id}")
+    base_logger.error(f"SSE connection opened for job {job_id}")
 
     try:
         while True:
             if await request.is_disconnected():
-                 print(f"SSE client disconnected for job {job_id}")
+                 base_logger.error(f"SSE client disconnected for job {job_id}")
                  break
 
             try:
                 status_update = await asyncio.wait_for(queue.get(), timeout=30)
-                print(f"Sending status '{status_update}' for job {job_id}")
+                base_logger.error(f"Sending status '{status_update}' for job {job_id}")
                 yield {
                     "event": "status_update",
                     "data": status_update
                 }
                 if status_update == 'completed' or status_update == 'failed':
-                    print(f"Job {job_id} finished, closing SSE stream.")
+                    base_logger.error(f"Job {job_id} finished, closing SSE stream.")
                     break
             except asyncio.TimeoutError:
                  yield {"event": "ping", "data": ""}
 
     except asyncio.CancelledError:
-         print(f"SSE task cancelled for job {job_id}")
+         base_logger.error(f"SSE task cancelled for job {job_id}")
     finally:
         if job_id in job_status_subscriptions:
             if queue in job_status_subscriptions[job_id]:
                 job_status_subscriptions[job_id].remove(queue)
             if not job_status_subscriptions[job_id]:
                 del job_status_subscriptions[job_id]
-                print(f"Removed last SSE subscription for job {job_id}")
+                base_logger.error(f"Removed last SSE subscription for job {job_id}")
 
 
 async def delete_user_api(user_id: int):
@@ -374,7 +376,7 @@ async def register_user(request: Request, username: Annotated[str, Form()]):
         error = f"Ошибка регистрации: {e.detail}"
     except Exception as e:
         error = f"Неожиданная ошибка при регистрации: {e}"
-        print(f"Unexpected registration error: {e}")
+        base_logger.error(f"Unexpected registration error: {e}")
 
     if message: query_params_dict["message"] = message
     if error: query_params_dict["error"] = error
@@ -407,7 +409,7 @@ async def login_user(request: Request, username: Annotated[str, Form()]):
         error = f"Ошибка входа: {e.detail}"
     except Exception as e:
         error = f"Неожиданная ошибка при входе: {e}"
-        print(f"Unexpected login error: {e}")
+        base_logger.error(f"Unexpected login error: {e}")
 
     if message: query_params_dict["message"] = message
     if error: query_params_dict["error"] = error

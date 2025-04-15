@@ -80,10 +80,10 @@ async def startup(app: FastAPI):
 @repeat_every(seconds=10)
 async def publish_available_models():
     await broker.publish(ModelAvailable(
-        model_name=transcription_model_name
+        model_name=transcription_model_full_name
     ), queue="model.available")
 
-@router.subscriber(transcription_model_name)
+@router.subscriber(transcription_model_full_name)
 async def transcribe_remote_deepgram(
         body: TranscriptionRequest,
         logger: Logger,

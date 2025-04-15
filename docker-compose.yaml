@@ -88,6 +88,21 @@ services:
     networks:
       - app-network
 
+  remote-language-service:
+    build:
+      dockerfile: remote_language_service/Dockerfile
+      context: .
+    env_file:
+      - ".env"
+      - ".secret.local.env"
+    ports:
+      - "8006:8000"
+    depends_on:
+      - rabbitmq
+      - api
+    networks:
+      - app-network
+
   local-language-service:
     build:
       dockerfile: local_language_service/Dockerfile

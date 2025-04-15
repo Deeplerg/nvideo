@@ -1,11 +1,8 @@
 import json
 from dataclasses import dataclass
 from logging import Logger
-
-from ollama import ChatResponse, AsyncClient
-
-from .EntityRelations import EntityRelations, Entity, Relationship, EntityRelationsSchema
-from ..config import AppConfiguration
+from .entity_relations import EntityRelations, Entity, Relationship, EntityRelationsSchema
+from .language_model import LanguageModel, TextMessage
 from shared.models import *
 
 @dataclass
@@ -17,19 +14,23 @@ class ChunkSummaryResponse:
 class LanguageService:
     def __init__(
             self,
-            client: AsyncClient,
-            logger: Logger):
-        self.__client = client
+            logger: Logger,
+            model: LanguageModel,
+            summary_system_prompt: str,
+            entity_system_prompt: str,
+            empty_chunk_threshold_ms: int
+    ):
         self.__logger = logger
-        self.__model_name = AppConfiguration.LANGUAGE_MODEL
-        self.__summary_system_prompt = AppConfiguration.LANGUAGE_SUMMARY_SYSTEM_PROMPT
-        self.__entity_system_prompt = AppConfiguration.LANGUAGE_ENTITY_SYSTEM_PROMPT
+        self.__model = model
+        self.__summary_system_prompt = summary_system_prompt
+        self.__entity_system_prompt = entity_system_prompt
+        self.__empty_chunk_threshold_ms = empty_chunk_threshold_ms
 
     async def summarize(self, chunks: list[TranscriptionChunkResult]) -> list[ChunkSummaryResponse]:
         summaries: list[ChunkSummaryResponse] = []
 
         for chunk in chunks:
-            threshold = AppConfiguration.LANGUAGE_EMPTY_CHUNK_THRESHOLD_MS
+            threshold = self.__empty_chunk_threshold_ms
             if chunk.end_time_ms - chunk.start_time_ms < threshold:
                 continue
 
@@ -50,7 +51,7 @@ class LanguageService:
         entity_names_set = set()
 
         for chunk in chunks:
-            threshold = AppConfiguration.LANGUAGE_EMPTY_CHUNK_THRESHOLD_MS
+            threshold = self.__empty_chunk_threshold_ms
             if chunk.end_time_ms - chunk.start_time_ms < threshold:
                 continue
 
@@ -109,15 +110,14 @@ class LanguageService:
 
         message = f"[Chunk {start_minutes_seconds} - {end_minutes_seconds}]\n{chunk.text}"
 
-        response: ChatResponse = await self.__client.chat(
-            model=self.__model_name,
+        response = await self.__model.chat(
             messages=[
-                {"role": "system", "content": self.__summary_system_prompt},
-                {"role": "user", "content": message}
+                TextMessage(message)
             ],
-            stream=False
+            system_prompt=self.__summary_system_prompt
         )
-        return response.message.content
+
+        return response
 
     async def __extract_entity_relations_chunk(
             self,
@@ -130,22 +130,19 @@ class LanguageService:
         existing_entity_relations_json = existing_entity_relations.model_dump_json(indent=2)
         existing_entity_relations_prompt = f"[Existing entities and relations]\n{existing_entity_relations_json}"
         transcript_prompt = f"[Chunk {start_minutes_seconds} - {end_minutes_seconds}]\n{chunk.text}"
-        schema = EntityRelationsSchema.model_json_schema()
 
-        response: ChatResponse = await self.__client.chat(
-            model=self.__model_name,
+        response: str = await self.__model.chat(
             messages=[
-                {"role": "system", "content": self.__entity_system_prompt},
-                {"role": "user", "content": existing_entity_relations_prompt},
-                {"role": "user", "content": transcript_prompt}
+                TextMessage(existing_entity_relations_prompt),
+                TextMessage(transcript_prompt)
             ],
-            stream=False,
-            format=schema
+            system_prompt=self.__entity_system_prompt,
+            schema=EntityRelationsSchema
         )
 
-        self.__logger.info(response.message.content)
+        self.__logger.info(response)
 
-        result: dict = json.loads(response.message.content)
+        result: dict = json.loads(response)
 
         entities = [
             Entity(

@@ -19,7 +19,9 @@ services:
               capabilities: [ gpu ]
 
   local-transcription-service:
-    build: ./local_transcription_service
+    build:
+      dockerfile: local_transcription_service/Dockerfile
+      context: .
     env_file:
       - ".env"
       - ".remote.env"
@@ -38,7 +40,9 @@ services:
       - local-models:/models
 
   local-language-service:
-    build: ./local_language_service
+    build:
+      dockerfile: local_language_service/Dockerfile
+      context: .
     env_file:
       - ".env"
       - ".remote.env"
@@ -48,7 +52,9 @@ services:
       - app-network
 
   local-graph-service:
-    build: ./local_graph_service
+    build:
+      dockerfile: local_graph_service/Dockerfile
+      context: .
     env_file:
       - ".env"
       - ".remote.env"

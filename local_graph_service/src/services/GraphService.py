@@ -31,7 +31,7 @@ class GraphService:
             self.__logger.info("Reducing dimensions with PCA")
             embeddings = self.__pca.reduce(embeddings)
 
-        if AppConfiguration.GRAPH_FAVOR_UMAP:
+        if AppConfiguration.GRAPH_FAVOR_UMAP and embeddings.shape[0] > 3:
             self.__logger.info("Reducing to 2D with UMAP")
             coords_2d = self.__umap.reduce(embeddings)
         else:

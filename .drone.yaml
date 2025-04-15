@@ -144,6 +144,28 @@ steps:
         --context="." 
         --dockerfile="web_service/Dockerfile"
 
+  - name: build-no-push-remote-transcription
+    image: gcr.io/kaniko-project/executor:debug
+    depends_on:
+      - clone
+    commands:
+      - echo "Building remote transcription service"
+      - /kaniko/executor
+        --no-push
+        --context="."
+        --dockerfile="remote_transcription_service/Dockerfile"
+
+  - name: build-no-push-remote-language
+    image: gcr.io/kaniko-project/executor:debug
+    depends_on:
+      - clone
+    commands:
+      - echo "Building remote language service"
+      - /kaniko/executor
+        --no-push
+        --context="."
+        --dockerfile="remote_language_service/Dockerfile"
+
 trigger:
   branch:
     - main

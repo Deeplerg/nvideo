@@ -1,4 +1,7 @@
 from logging import Logger
+
+from numpy import ndarray
+
 from .EmbeddingService import EmbeddingService
 from .Graph import *
 from .PCAService import PCAService
@@ -25,7 +28,7 @@ class GraphService:
         entity_names = [entity.name for entity in entity_relations.entities]
 
         self.__logger.info("Generating embeddings")
-        embeddings = self.__embed.embed(entity_names)
+        embeddings: ndarray = self.__embed.embed(entity_names)
 
         if AppConfiguration.GRAPH_USE_PCA:
             self.__logger.info("Reducing dimensions with PCA")

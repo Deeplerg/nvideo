@@ -11,8 +11,9 @@ broker = router.broker
 app = FastAPI()
 app.include_router(router)
 
-
 language_model_name = AppConfiguration.LANGUAGE_MODEL.split(':')[0]
+summary_model_name = f"summary.local-{language_model_name}"
+entity_relation_model_name = f"entity-relation.local-{language_model_name}"
 
 ollama_client : AsyncClient | None = None
 
@@ -57,8 +58,8 @@ async def startup(app: FastAPI):
 @repeat_every(seconds=10)
 async def publish_available_models():
     models = [
-        f"summary.local-{language_model_name}",
-        f"entity-relation.local-{language_model_name}"
+        summary_model_name,
+        entity_relation_model_name
     ]
 
     for model in models:

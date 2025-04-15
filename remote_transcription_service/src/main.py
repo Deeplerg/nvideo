@@ -13,6 +13,10 @@ from .services.DeepgramTranscriptionModel import DeepgramTranscriptionModel
 from .config import AppConfiguration
 from google import genai
 
+transcription_model_name = AppConfiguration.TRANSCRIPTION_MODEL
+transcription_provider = AppConfiguration.TRANSCRIPTION_PROVIDER
+transcription_model_full_name = \
+    f"transcription.remote-{transcription_provider}-{transcription_model_name}"
 
 router = RabbitRouter(AppConfiguration.AMQP_URL, fail_fast=False)
 broker = router.broker
@@ -44,16 +48,16 @@ def get_custom_logger(name: str | None) -> logging.Logger:
 def get_deepgram_model() -> DeepgramTranscriptionModel:
     client = get_deepgram_client()
     logger = get_custom_logger("deepgram")
-    return DeepgramTranscriptionModel(logger, AppConfiguration.TRANSCRIPTION_MODEL, client)
+    return DeepgramTranscriptionModel(logger, transcription_model_name, client)
 
 def get_gemini_model() -> GeminiTranscriptionModel:
     client = get_gemini_client()
     logger = get_custom_logger("gemini")
-    return GeminiTranscriptionModel(logger, AppConfiguration.TRANSCRIPTION_MODEL, client)
+    return GeminiTranscriptionModel(logger, transcription_model_name, client)
 
 def get_transcription_service():
     model: TranscriptionModel
-    match AppConfiguration.TRANSCRIPTION_PROVIDER:
+    match transcription_provider:
         case "deepgram":
             model = get_deepgram_model()
         case "google":
@@ -66,9 +70,6 @@ def get_transcription_service():
 def get_download_service():
     return DownloadService()
 
-def get_transcription_model_name() -> str:
-    return f"transcription.remote-{AppConfiguration.TRANSCRIPTION_PROVIDER}-{AppConfiguration.TRANSCRIPTION_MODEL}"
-
 @router.after_startup
 async def startup(app: FastAPI):
     await broker.connect()
@@ -79,10 +80,10 @@ async def startup(app: FastAPI):
 @repeat_every(seconds=10)
 async def publish_available_models():
     await broker.publish(ModelAvailable(
-        model_name=get_transcription_model_name()
+        model_name=transcription_model_name
     ), queue="model.available")
 
-@router.subscriber(get_transcription_model_name())
+@router.subscriber(transcription_model_name)
 async def transcribe_remote_deepgram(
         body: TranscriptionRequest,
         logger: Logger,

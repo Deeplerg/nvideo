@@ -11,7 +11,8 @@ from .services.TSNEService import TSNEService
 from .services.UMAPService import UMAPService
 
 
-embed_model_name = AppConfiguration.GRAPH_EMBED_MODEL
+embed_model = AppConfiguration.GRAPH_EMBED_MODEL
+embed_model_full_name = f"graph.local-{embed_model}"
 
 
 router = RabbitRouter(AppConfiguration.AMQP_URL, fail_fast=False)
@@ -73,14 +74,14 @@ async def startup(app: FastAPI):
 
 @repeat_every(seconds=10)
 async def publish_available_models():
-    models = [ f"graph.local-{embed_model_name}" ]
+    models = [ embed_model_full_name ]
 
     for model in models:
         await broker.publish(ModelAvailable(
             model_name=model
         ), queue="model.available")
 
-@router.subscriber(f"graph.local-{embed_model_name}")
+@router.subscriber(embed_model_full_name)
 async def graph_local(
         body : GraphRequest,
         logger: Logger,

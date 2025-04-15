@@ -12,6 +12,10 @@ from .services.FasterWhisperTranscriptionModel import FasterWhisperTranscription
 from .config import AppConfiguration
 
 
+transcription_model = AppConfiguration.TRANSCRIPTION_MODEL
+transcription_model_full_name = "transcription.local-whisper"
+
+
 router = RabbitRouter(AppConfiguration.AMQP_URL, fail_fast=False)
 broker = router.broker
 app = FastAPI()
@@ -23,13 +27,13 @@ faster_whisper_model : FasterWhisperTranscriptionModel | None = None
 def get_transformer_model() -> TransformerTranscriptionModel:
     global transformer_model
     if transformer_model is None:
-        transformer_model = TransformerTranscriptionModel(AppConfiguration.TRANSCRIPTION_MODEL)
+        transformer_model = TransformerTranscriptionModel(transcription_model)
     return transformer_model
 
 def get_faster_whisper_model() -> FasterWhisperTranscriptionModel:
     global faster_whisper_model
     if faster_whisper_model is None:
-        faster_whisper_model = FasterWhisperTranscriptionModel(AppConfiguration.TRANSCRIPTION_MODEL)
+        faster_whisper_model = FasterWhisperTranscriptionModel(transcription_model)
     return faster_whisper_model
 
 def get_transcription_service():
@@ -56,14 +60,14 @@ async def startup(app: FastAPI):
 
 @repeat_every(seconds=10)
 async def publish_available_models():
-    models = [ "transcription.local-whisper" ]
+    models = [ transcription_model_full_name ]
 
     for model in models:
         await broker.publish(ModelAvailable(
             model_name=model
         ), queue="model.available")
 
-@router.subscriber("transcription.local-whisper")
+@router.subscriber(transcription_model_full_name)
 async def transcribe_local_whisper(
         body: TranscriptionRequest,
         logger: Logger,

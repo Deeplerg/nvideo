@@ -73,6 +73,21 @@ services:
     volumes:
       - local-models:/models
 
+  remote-transcription-service:
+    build:
+      dockerfile: remote_transcription_service/Dockerfile
+      context: .
+    env_file:
+      - ".env"
+      - ".secret.local.env"
+    ports:
+      - "8005:8000"
+    depends_on:
+      - rabbitmq
+      - api
+    networks:
+      - app-network
+
   local-language-service:
     build:
       dockerfile: local_language_service/Dockerfile

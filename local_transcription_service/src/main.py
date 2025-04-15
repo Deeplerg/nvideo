@@ -5,10 +5,11 @@ from fastapi_utils.tasks import repeat_every
 from faststream.rabbit.fastapi import RabbitRouter, Logger
 from shared.audio import *
 from shared.transcription import *
+from shared.transcription.utils import convert_to_chunk_results
+from shared.models import *
 from .services.TransformerTranscriptionModel import TransformerTranscriptionModel
 from .services.FasterWhisperTranscriptionModel import FasterWhisperTranscriptionModel
 from .config import AppConfiguration
-from shared.models import *
 
 
 router = RabbitRouter(AppConfiguration.AMQP_URL, fail_fast=False)
@@ -61,24 +62,6 @@ async def publish_available_models():
         await broker.publish(ModelAvailable(
             model_name=model
         ), queue="model.available")
-
-def convert_to_chunk_results(chunks: list[TranscriptionChunk]) -> list[TranscriptionChunkResult]:
-    return [
-        TranscriptionChunkResult(
-            text=chunk.text,
-            start_time_ms=chunk.start_time_ms,
-            end_time_ms=chunk.end_time_ms
-        )
-        for chunk in chunks
-    ]
-
-async def try_publish(response: TranscriptionResponse) -> bool:
-    try:
-        await broker.publish(response, queue="transcription.result")
-        return True
-    except Exception as e:
-        print(e)
-        return False
 
 @router.subscriber("transcription.local-whisper")
 async def transcribe_local_whisper(

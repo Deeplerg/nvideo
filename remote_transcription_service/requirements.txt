@@ -1,0 +1,8 @@
+﻿fastapi[standard]>=0.115.11
+faststream[rabbit]>=0.5.35
+python-dotenv>=1.0.1
+fastapi-utils>=0.8.0
+pydub>=0.25.1
+yt_dlp>=2025.2.19
+deepgram-sdk>=3.11.0
+google-genai>=1.10.0

@@ -1,7 +1,6 @@
 import os
-from .AudioSplitter import split_audio
-from .TranscriptionChunk import TranscriptionChunk
-from .TranscriptionModel import TranscriptionModel
+from . import TranscriptionModel, TranscriptionChunk
+from ..audio import split_audio
 
 
 class TranscriptionService:

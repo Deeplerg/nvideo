@@ -1,7 +1,7 @@
 import gc
 import torch
 from faster_whisper import WhisperModel
-from .TranscriptionModel import TranscriptionModel
+from shared.transcription import *
 from ..config import *
 
 

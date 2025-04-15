@@ -3,10 +3,8 @@ import os
 from fastapi import FastAPI, Depends
 from fastapi_utils.tasks import repeat_every
 from faststream.rabbit.fastapi import RabbitRouter, Logger
-from .services.DownloadService import DownloadService
-from .services.TranscriptionChunk import TranscriptionChunk
-from .services.TranscriptionModel import TranscriptionModel
-from .services.TranscriptionService import TranscriptionService
+from shared.audio import *
+from shared.transcription import *
 from .services.TransformerTranscriptionModel import TransformerTranscriptionModel
 from .services.FasterWhisperTranscriptionModel import FasterWhisperTranscriptionModel
 from .config import AppConfiguration

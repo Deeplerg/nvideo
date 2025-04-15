@@ -1,7 +1,7 @@
 import gc
 import torch
 from transformers import AutoProcessor, AutoModelForSpeechSeq2Seq, pipeline, AutomaticSpeechRecognitionPipeline
-from .TranscriptionModel import TranscriptionModel
+from shared.transcription import *
 from ..config import *
 
 

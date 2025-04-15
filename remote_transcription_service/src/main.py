@@ -19,10 +19,23 @@ broker = router.broker
 app = FastAPI()
 app.include_router(router)
 
-def get_deepgram_client() -> DeepgramClient:
+deepgram_client : DeepgramClient | None = None
+gemini_client : genai.Client | None = None
+
+def get_deepgram_client():
+    global deepgram_client
+
+    if deepgram_client is not None:
+        return deepgram_client
+
     return DeepgramClient(api_key=AppConfiguration.DEEPGRAM_TRANSCRIPTION_API_KEY)
 
 def get_gemini_client() -> genai.Client:
+    global gemini_client
+
+    if gemini_client is not None:
+        return gemini_client
+
     return genai.Client(api_key=AppConfiguration.GEMINI_TRANSCRIPTION_API_KEY)
 
 def get_custom_logger(name: str | None) -> logging.Logger:

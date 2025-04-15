@@ -7,7 +7,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from faststream.rabbit.fastapi import RabbitRouter, Logger
 from sqlmodel import Session, select, create_engine
 from .config import AppConfiguration
-from .models import *
+from shared.models import *
 from .database_models import *
 from prometheus_client import Counter, make_asgi_app
 

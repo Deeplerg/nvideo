@@ -1,5 +1,4 @@
-﻿from uuid import UUID
-
+from uuid import UUID
 from pydantic import BaseModel
 
 class TranscriptionRequest(BaseModel):
@@ -14,6 +13,3 @@ class TranscriptionChunkResult(BaseModel):
 class TranscriptionResponse(BaseModel):
     job_id: UUID
     result: list[TranscriptionChunkResult]
-
-class ModelAvailable(BaseModel):
-    model_name: str

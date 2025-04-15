@@ -5,7 +5,7 @@ from .PCAService import PCAService
 from .TSNEService import TSNEService
 from .UMAPService import UMAPService
 from ..config import AppConfiguration
-from ..models import *
+from shared.models import *
 
 
 class GraphService:

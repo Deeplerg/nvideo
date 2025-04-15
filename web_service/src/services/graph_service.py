@@ -3,7 +3,7 @@ import plotly.graph_objects as go
 import plotly.io as pio
 from typing import List, Tuple, Set, Dict
 import logging
-from ..models import GraphResult, EntityRelationResult, EntityResult, RelationshipResult
+from shared.models import *
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

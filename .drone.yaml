@@ -29,7 +29,7 @@ steps:
         echo Building and pushing API service: $API_IMAGE_NAME
       - /kaniko/executor 
         --destination="$API_IMAGE_NAME" 
-        --context="api_service" 
+        --context="." 
         --dockerfile="api_service/Dockerfile"
 
   - name: build-push-web
@@ -57,7 +57,7 @@ steps:
         echo Building and pushing Web service: "$WEB_IMAGE_NAME"
       - /kaniko/executor 
         --destination="$WEB_IMAGE_NAME" 
-        --context="web_service" 
+        --context="." 
         --dockerfile="web_service/Dockerfile"
 
   - name: clone-infra
@@ -130,7 +130,7 @@ steps:
       - echo "Building API service"
       - /kaniko/executor 
         --no-push 
-        --context="api_service" 
+        --context="." 
         --dockerfile="api_service/Dockerfile"
 
   - name: build-no-push-web
@@ -141,7 +141,7 @@ steps:
       - echo "Building Web service"
       - /kaniko/executor 
         --no-push 
-        --context="web_service" 
+        --context="." 
         --dockerfile="web_service/Dockerfile"
 
 trigger:

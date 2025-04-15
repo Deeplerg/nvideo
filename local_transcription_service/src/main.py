@@ -10,7 +10,7 @@ from .services.TranscriptionService import TranscriptionService
 from .services.TransformerTranscriptionModel import TransformerTranscriptionModel
 from .services.FasterWhisperTranscriptionModel import FasterWhisperTranscriptionModel
 from .config import AppConfiguration
-from .models import *
+from shared.models import *
 
 
 router = RabbitRouter(AppConfiguration.AMQP_URL, fail_fast=False)

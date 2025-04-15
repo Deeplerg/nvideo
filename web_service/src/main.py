@@ -9,11 +9,7 @@ from uuid import UUID
 from sse_starlette import EventSourceResponse
 from pydantic import ValidationError
 from starlette.datastructures import URL
-from .models import (
-    AvailableModelResponse, UserResponse, JobResponse, ArtifactResponse,
-    TranscriptionChunkResult, ChunkSummaryResult, GraphResult, JobStatusUpdated,
-    EntityRelationResult, UpdateUserRoleRequest
-)
+from shared.models import *
 from .config import AppConfiguration
 from .services.graph_service import GraphService
 from . import utils
@@ -34,7 +30,7 @@ job_status_subscriptions: dict[UUID, list[asyncio.Queue]] = {}
 app = FastAPI()
 app.include_router(router)
 
-templates = Jinja2Templates(directory="src/templates")
+templates = Jinja2Templates(directory="web_service/templates")
 templates.env.globals['utils'] = utils
 
 

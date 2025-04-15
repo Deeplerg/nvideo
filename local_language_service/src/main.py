@@ -4,7 +4,7 @@ from faststream.rabbit.fastapi import RabbitRouter, Logger
 from ollama import AsyncClient
 from .services.LanguageService import LanguageService, ChunkSummaryResponse
 from .config import AppConfiguration
-from .models import *
+from shared.models import *
 
 router = RabbitRouter(AppConfiguration.AMQP_URL, fail_fast=False)
 broker = router.broker
@@ -105,7 +105,7 @@ async def entity_local(
     entity_relations = await language.generate_entity_relations(body.transcription)
     logger.info(f"Generated entity-relations for video {body.video_id}")
 
-    result=EntityRelationResult.from_entity_relations(entity_relations)
+    result=entity_relations.to_result()
 
     response=EntityRelationResponse(
         job_id=body.job_id,

@@ -39,7 +39,9 @@ services:
               capabilities: [ gpu ]
 
   api:
-    build: ./api_service
+    build:
+      dockerfile: api_service/Dockerfile
+      context: .
     env_file: .env
     ports:
       - "8000:8000"
@@ -50,7 +52,9 @@ services:
       - app-network
 
   local-transcription-service:
-    build: ./local_transcription_service
+    build:
+      dockerfile: local_transcription_service/Dockerfile
+      context: .
     env_file: .env
     ports:
       - "8001:8000"
@@ -70,7 +74,9 @@ services:
       - local-models:/models
 
   local-language-service:
-    build: ./local_language_service
+    build:
+      dockerfile: local_language_service/Dockerfile
+      context: .
     env_file: .env
     ports:
       - "8002:8000"
@@ -81,7 +87,9 @@ services:
       - app-network
 
   local-graph-service:
-    build: ./local_graph_service
+    build:
+      dockerfile: local_graph_service/Dockerfile
+      context: .
     env_file: .env
     ports:
       - "8003:8000"
@@ -101,7 +109,9 @@ services:
       - local-models:/models
 
   web:
-    build: ./web_service
+    build:
+      dockerfile: web_service/Dockerfile
+      context: .
     env_file: .env
     ports:
       - "8004:8000"

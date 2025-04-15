@@ -6,7 +6,7 @@ from ollama import ChatResponse, AsyncClient
 
 from .EntityRelations import EntityRelations, Entity, Relationship, EntityRelationsSchema
 from ..config import AppConfiguration
-from ..models import TranscriptionChunkResult
+from shared.models import *
 
 @dataclass
 class ChunkSummaryResponse:

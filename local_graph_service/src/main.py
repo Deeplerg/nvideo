@@ -5,7 +5,7 @@ from faststream.rabbit.fastapi import RabbitRouter, Logger
 from .services.EmbeddingService import EmbeddingService
 from .services.GraphService import GraphService
 from .config import AppConfiguration
-from .models import *
+from shared.models import *
 from .services.PCAService import PCAService
 from .services.TSNEService import TSNEService
 from .services.UMAPService import UMAPService
@@ -91,7 +91,7 @@ async def graph_local(
     graph = await asyncio.to_thread(graph_service.generate_graph, body.entity_relations)
     logger.info(f"Made a set of points for video {body.video_id}")
 
-    result=GraphResult.from_graph(graph)
+    result=graph.to_result()
 
     await broker.publish(GraphResponse(
         job_id=body.job_id,

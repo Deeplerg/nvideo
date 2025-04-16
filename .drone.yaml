@@ -208,8 +208,6 @@ name: prod-build-only
 steps:
   - name: build-no-push-api
     image: gcr.io/kaniko-project/executor:debug
-    depends_on:
-      - clone
     commands:
       - echo "Building API service"
       - /kaniko/executor 
@@ -219,8 +217,6 @@ steps:
 
   - name: build-no-push-web
     image: gcr.io/kaniko-project/executor:debug
-    depends_on:
-      - clone
     commands:
       - echo "Building Web service"
       - /kaniko/executor 
@@ -230,8 +226,6 @@ steps:
 
   - name: build-no-push-remote-transcription
     image: gcr.io/kaniko-project/executor:debug
-    depends_on:
-      - clone
     commands:
       - echo "Building remote transcription service"
       - /kaniko/executor
@@ -241,8 +235,6 @@ steps:
 
   - name: build-no-push-remote-language
     image: gcr.io/kaniko-project/executor:debug
-    depends_on:
-      - clone
     commands:
       - echo "Building remote language service"
       - /kaniko/executor

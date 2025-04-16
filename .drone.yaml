@@ -235,8 +235,33 @@ type: kubernetes
 name: prod-build-only
 
 steps:
+  - name: image-warmer
+    image: gcr.io/kaniko-project/warmer:latest
+    volumes:
+      - name: warmer-cache
+        path: /cache
+    commands:
+      - /kaniko/warmer 
+        --dockerfile="api_service/Dockerfile"
+        --cache-dir="/cache/images"
+      - /kaniko/warmer 
+        --dockerfile="web_service/Dockerfile"
+        --cache-dir="/cache/images"
+      - /kaniko/warmer 
+        --dockerfile="remote_transcription_service/Dockerfile"
+        --cache-dir="/cache/images"
+      - /kaniko/warmer 
+        --dockerfile="remote_language_service/Dockerfile"
+        --cache-dir="/cache/images"
+      - /kaniko/warmer 
+        --dockerfile="local_graph_service/Dockerfile"
+        --cache-dir="/cache/images"
+
   - name: build-no-push-api
     image: gcr.io/kaniko-project/executor:debug
+    volumes:
+      - name: warmer-cache
+        path: /cache
     commands:
       - echo "Building API service"
       - /kaniko/executor
@@ -244,9 +269,17 @@ steps:
         --context="."
         --dockerfile="api_service/Dockerfile"
         --compressed-caching=false
+        --cache=true
+        --cache-copy-layers=false
+        --cache-run-layers=false
+        --no-push-cache
+        --cache-dir=/cache/images
 
   - name: build-no-push-web
     image: gcr.io/kaniko-project/executor:debug
+    volumes:
+      - name: warmer-cache
+        path: /cache
     commands:
       - echo "Building Web service"
       - /kaniko/executor
@@ -254,9 +287,17 @@ steps:
         --context="."
         --dockerfile="web_service/Dockerfile"
         --compressed-caching=false
+        --cache=true
+        --cache-copy-layers=false
+        --cache-run-layers=false
+        --no-push-cache
+        --cache-dir=/cache/images
 
   - name: build-no-push-remote-transcription
     image: gcr.io/kaniko-project/executor:debug
+    volumes:
+      - name: warmer-cache
+        path: /cache
     commands:
       - echo "Building remote transcription service"
       - /kaniko/executor
@@ -264,9 +305,17 @@ steps:
         --context="."
         --dockerfile="remote_transcription_service/Dockerfile"
         --compressed-caching=false
+        --cache=true
+        --cache-copy-layers=false
+        --cache-run-layers=false
+        --no-push-cache
+        --cache-dir=/cache/images
 
   - name: build-no-push-remote-language
     image: gcr.io/kaniko-project/executor:debug
+    volumes:
+      - name: warmer-cache
+        path: /cache
     commands:
       - echo "Building remote language service"
       - /kaniko/executor
@@ -274,9 +323,17 @@ steps:
         --context="."
         --dockerfile="remote_language_service/Dockerfile"
         --compressed-caching=false
+        --cache=true
+        --cache-copy-layers=false
+        --cache-run-layers=false
+        --no-push-cache
+        --cache-dir=/cache/images
 
   - name: build-no-push-local-graph
     image: gcr.io/kaniko-project/executor:debug
+    volumes:
+      - name: warmer-cache
+        path: /cache
     commands:
       - echo "Building local graph service"
       - /kaniko/executor
@@ -284,6 +341,16 @@ steps:
         --context="."
         --dockerfile="local_graph_service/Dockerfile"
         --compressed-caching=false
+        --cache=true
+        --cache-copy-layers=false
+        --cache-run-layers=false
+        --no-push-cache
+        --cache-dir=/cache/images
+
+volumes:
+  - name: warmer-cache
+    claim:
+      name: kaniko-warmer-pvc
 
 trigger:
   branch:

@@ -250,7 +250,6 @@ steps:
 trigger:
   branch:
     - main
-    - exp/cicd
   event:
     - pull_request
     - push

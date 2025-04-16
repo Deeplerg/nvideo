@@ -94,8 +94,7 @@ steps:
         --compressed-caching=false
         --cache=true
         --cache-copy-layers=false
-        --cache-run-layers=false
-        --no-push-cache
+        --cache-run-layers=true
         --cache-dir=/cache/images
 
   - name: build-push-web
@@ -130,8 +129,7 @@ steps:
         --compressed-caching=false
         --cache=true
         --cache-copy-layers=false
-        --cache-run-layers=false
-        --no-push-cache
+        --cache-run-layers=true
         --cache-dir=/cache/images
 
   - name: build-push-remote-transcription
@@ -166,8 +164,7 @@ steps:
         --compressed-caching=false
         --cache=true
         --cache-copy-layers=false
-        --cache-run-layers=false
-        --no-push-cache
+        --cache-run-layers=true
         --cache-dir=/cache/images
 
   - name: build-push-remote-language
@@ -202,8 +199,7 @@ steps:
         --compressed-caching=false
         --cache=true
         --cache-copy-layers=false
-        --cache-run-layers=false
-        --no-push-cache
+        --cache-run-layers=true
         --cache-dir=/cache/images
 
   - name: build-push-local-graph
@@ -238,8 +234,7 @@ steps:
         --compressed-caching=false
         --cache=true
         --cache-copy-layers=false
-        --cache-run-layers=false
-        --no-push-cache
+        --cache-run-layers=true
         --cache-dir=/cache/images
 
   - name: clone-infra

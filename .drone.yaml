@@ -4,7 +4,7 @@ type: kubernetes
 name: prod-build-push
 
 steps:
-  - name: image-warmer-api
+  - name: image-warmer
     image: gcr.io/kaniko-project/warmer:latest
     volumes:
       - name: warmer-cache
@@ -12,45 +12,9 @@ steps:
     command:
       - /kaniko/warmer
       - --dockerfile=api_service/Dockerfile
-      - --cache-dir=/cache/images
-
-  - name: image-warmer-web
-    image: gcr.io/kaniko-project/warmer:latest
-    volumes:
-      - name: warmer-cache
-        path: /cache
-    command:
-      - /kaniko/warmer
       - --dockerfile=web_service/Dockerfile
-      - --cache-dir=/cache/images
-
-  - name: image-warmer-remote-transcription
-    image: gcr.io/kaniko-project/warmer:latest
-    volumes:
-      - name: warmer-cache
-        path: /cache
-    command:
-      - /kaniko/warmer
       - --dockerfile=remote_transcription_service/Dockerfile
-      - --cache-dir=/cache/images
-
-  - name: image-warmer-remote-language
-    image: gcr.io/kaniko-project/warmer:latest
-    volumes:
-      - name: warmer-cache
-        path: /cache
-    command:
-      - /kaniko/warmer
       - --dockerfile=remote_language_service/Dockerfile
-      - --cache-dir=/cache/images
-
-  - name: image-warmer-local-graph
-    image: gcr.io/kaniko-project/warmer:latest
-    volumes:
-      - name: warmer-cache
-        path: /cache
-    command:
-      - /kaniko/warmer
       - --dockerfile=local_graph_service/Dockerfile
       - --cache-dir=/cache/images
 

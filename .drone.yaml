@@ -4,68 +4,8 @@ type: kubernetes
 name: prod-build-push
 
 steps:
-  - name: image-warmer-api
-    image: gcr.io/kaniko-project/warmer:latest
-    volumes:
-      - name: warmer-cache
-        path: /cache
-    command:
-      - /kaniko/warmer
-      - --dockerfile=api_service/Dockerfile
-      - --cache-dir=/cache/images
-
-  - name: image-warmer-web
-    image: gcr.io/kaniko-project/warmer:latest
-    depends_on:
-      - image-warmer-api
-    volumes:
-      - name: warmer-cache
-        path: /cache
-    command:
-      - /kaniko/warmer
-      - --dockerfile=web_service/Dockerfile
-      - --cache-dir=/cache/images
-
-  - name: image-warmer-remote-transcription
-    image: gcr.io/kaniko-project/warmer:latest
-    depends_on:
-      - image-warmer-web
-    volumes:
-      - name: warmer-cache
-        path: /cache
-    command:
-      - /kaniko/warmer
-      - --dockerfile=remote_transcription_service/Dockerfile
-      - --cache-dir=/cache/images
-
-  - name: image-warmer-remote-language
-    image: gcr.io/kaniko-project/warmer:latest
-    depends_on:
-      - image-warmer-remote-transcription
-    volumes:
-      - name: warmer-cache
-        path: /cache
-    command:
-      - /kaniko/warmer
-      - --dockerfile=remote_language_service/Dockerfile
-      - --cache-dir=/cache/images
-
-  - name: image-warmer-local-graph
-    image: gcr.io/kaniko-project/warmer:latest
-    depends_on:
-      - image-warmer-remote-language
-    volumes:
-      - name: warmer-cache
-        path: /cache
-    command:
-      - /kaniko/warmer
-      - --dockerfile=local_graph_service/Dockerfile
-      - --cache-dir=/cache/images
-
   - name: build-push-api
     image: gcr.io/kaniko-project/executor:debug
-    depends_on:
-      - image-warmer-api
     environment:
       USERNAME:
         from_secret: registry_username
@@ -73,9 +13,6 @@ steps:
         from_secret: registry_password
       REGISTRY:
         from_secret: registry_address
-    volumes:
-      - name: warmer-cache
-        path: /cache
     commands:
       - COMMIT=${DRONE_COMMIT_SHA:0:8}
       - RAW_BRANCH=${DRONE_BRANCH}
@@ -98,14 +35,12 @@ steps:
         --cache=true
         --cache-copy-layers=false
         --cache-run-layers=true
-        --cache-dir=/cache/images
         --image-fs-extract-retry=5
         --image-download-retry=5
 
   - name: build-push-web
     image: gcr.io/kaniko-project/executor:debug
     depends_on:
-      - image-warmer-web
       - build-push-api
     environment:
       USERNAME:
@@ -114,9 +49,6 @@ steps:
         from_secret: registry_password
       REGISTRY:
         from_secret: registry_address
-    volumes:
-      - name: warmer-cache
-        path: /cache
     commands:
       - COMMIT=${DRONE_COMMIT_SHA:0:8}
       - RAW_BRANCH=${DRONE_BRANCH}
@@ -139,14 +71,12 @@ steps:
         --cache=true
         --cache-copy-layers=false
         --cache-run-layers=true
-        --cache-dir=/cache/images
         --image-fs-extract-retry=5
         --image-download-retry=5
 
   - name: build-push-remote-transcription
     image: gcr.io/kaniko-project/executor:debug
     depends_on:
-      - image-warmer-remote-transcription
       - build-push-web
     environment:
       USERNAME:
@@ -155,9 +85,6 @@ steps:
         from_secret: registry_password
       REGISTRY:
         from_secret: registry_address
-    volumes:
-      - name: warmer-cache
-        path: /cache
     commands:
       - COMMIT=${DRONE_COMMIT_SHA:0:8}
       - RAW_BRANCH=${DRONE_BRANCH}
@@ -180,14 +107,12 @@ steps:
         --cache=true
         --cache-copy-layers=false
         --cache-run-layers=true
-        --cache-dir=/cache/images
         --image-fs-extract-retry=5
         --image-download-retry=5
 
   - name: build-push-remote-language
     image: gcr.io/kaniko-project/executor:debug
     depends_on:
-      - image-warmer-remote-language
       - build-push-remote-transcription
     environment:
       USERNAME:
@@ -196,9 +121,6 @@ steps:
         from_secret: registry_password
       REGISTRY:
         from_secret: registry_address
-    volumes:
-      - name: warmer-cache
-        path: /cache
     commands:
       - COMMIT=${DRONE_COMMIT_SHA:0:8}
       - RAW_BRANCH=${DRONE_BRANCH}
@@ -221,14 +143,12 @@ steps:
         --cache=true
         --cache-copy-layers=false
         --cache-run-layers=true
-        --cache-dir=/cache/images
         --image-fs-extract-retry=5
         --image-download-retry=5
 
   - name: build-push-local-graph
     image: gcr.io/kaniko-project/executor:debug
     depends_on:
-      - image-warmer-local-graph
       - build-push-remote-language
     environment:
       USERNAME:
@@ -237,9 +157,6 @@ steps:
         from_secret: registry_password
       REGISTRY:
         from_secret: registry_address
-    volumes:
-      - name: warmer-cache
-        path: /cache
     commands:
       - COMMIT=${DRONE_COMMIT_SHA:0:8}
       - RAW_BRANCH=${DRONE_BRANCH}
@@ -262,7 +179,6 @@ steps:
         --cache=true
         --cache-copy-layers=false
         --cache-run-layers=true
-        --cache-dir=/cache/images
         --image-fs-extract-retry=5
         --image-download-retry=5
 
@@ -324,11 +240,6 @@ steps:
 #      - git add .
 #      - git commit -am "Update image tags" --author="Drone <drone@deeplerg.dev>" --allow-empty
 #      - git push
-
-volumes:
-  - name: warmer-cache
-    claim:
-      name: kaniko-warmer-pvc
 
 trigger:
   branch:

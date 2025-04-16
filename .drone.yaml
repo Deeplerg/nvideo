@@ -300,6 +300,7 @@ volumes:
 trigger:
   branch:
     - main
+    - exp/cicd
   event:
     include:
       - promote
@@ -307,7 +308,6 @@ trigger:
       # - push
   target:
     - production
-    - exp/cicd
 
 
 ---

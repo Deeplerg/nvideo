@@ -103,7 +103,6 @@ steps:
     image: gcr.io/kaniko-project/executor:debug
     depends_on:
       - image-warmer-web
-      - build-push-api
     environment:
       USERNAME:
         from_secret: registry_username
@@ -141,7 +140,6 @@ steps:
     image: gcr.io/kaniko-project/executor:debug
     depends_on:
       - image-warmer-remote-transcription
-      - build-push-web
     environment:
       USERNAME:
         from_secret: registry_username
@@ -179,7 +177,6 @@ steps:
     image: gcr.io/kaniko-project/executor:debug
     depends_on:
       - image-warmer-remote-language
-      - build-push-remote-transcription
     environment:
       USERNAME:
         from_secret: registry_username
@@ -217,7 +214,6 @@ steps:
     image: gcr.io/kaniko-project/executor:debug
     depends_on:
       - image-warmer-local-graph
-      - build-push-remote-language
     environment:
       USERNAME:
         from_secret: registry_username
@@ -291,24 +287,24 @@ steps:
         echo Updating Kustomize image for local graph: "$LOCAL_GRAPH_IMAGE_NAME"
       - kustomize edit set image nvideo-local-graph-image-name-placeholder="$LOCAL_GRAPH_IMAGE_NAME"
 
-  - name: push-infra-changes
-    image: alpine/git
-    depends_on:
-      - build-push-api
-      - build-push-web
-      - build-push-remote-transcription
-      - build-push-remote-language
-      - build-push-local-graph
-      - clone-infra
-      - update-infra
-    commands:
-      - cd nvideo-infra
-      - git checkout main
-      - git config user.email "drone@deeplerg.dev"
-      - git config user.name "Drone"
-      - git add .
-      - git commit -am "Update image tags" --author="Drone <drone@deeplerg.dev>" --allow-empty
-      - git push
+#  - name: push-infra-changes
+#    image: alpine/git
+#    depends_on:
+#      - build-push-api
+#      - build-push-web
+#      - build-push-remote-transcription
+#      - build-push-remote-language
+#      - build-push-local-graph
+#      - clone-infra
+#      - update-infra
+#    commands:
+#      - cd nvideo-infra
+#      - git checkout main
+#      - git config user.email "drone@deeplerg.dev"
+#      - git config user.name "Drone"
+#      - git add .
+#      - git commit -am "Update image tags" --author="Drone <drone@deeplerg.dev>" --allow-empty
+#      - git push
 
 volumes:
   - name: warmer-cache
@@ -318,6 +314,7 @@ volumes:
 trigger:
   branch:
     - main
+    - exp/cicd
   event:
     include:
       - promote
@@ -386,6 +383,7 @@ steps:
 trigger:
   branch:
     - main
+    - exp/cicd
   event:
     - pull_request
     - push

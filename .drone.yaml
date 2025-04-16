@@ -241,6 +241,8 @@ steps:
       - name: warmer-cache
         path: /cache
     commands:
+      - echo 12345
+      - sleep 1h
       - /kaniko/warmer 
         --dockerfile="api_service/Dockerfile"
         --cache-dir="/cache/images"

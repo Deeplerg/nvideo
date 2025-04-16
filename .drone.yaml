@@ -32,9 +32,6 @@ steps:
         --context="." 
         --dockerfile="api_service/Dockerfile"
         --compressed-caching=false
-        --cache=true
-        --cache-copy-layers=false
-        --cache-run-layers=true
         --image-fs-extract-retry=5
         --image-download-retry=5
 
@@ -68,9 +65,6 @@ steps:
         --context="." 
         --dockerfile="web_service/Dockerfile"
         --compressed-caching=false
-        --cache=true
-        --cache-copy-layers=false
-        --cache-run-layers=true
         --image-fs-extract-retry=5
         --image-download-retry=5
 
@@ -104,9 +98,6 @@ steps:
         --context="." 
         --dockerfile="remote_transcription_service/Dockerfile"
         --compressed-caching=false
-        --cache=true
-        --cache-copy-layers=false
-        --cache-run-layers=true
         --image-fs-extract-retry=5
         --image-download-retry=5
 
@@ -140,9 +131,6 @@ steps:
         --context="." 
         --dockerfile="remote_language_service/Dockerfile"
         --compressed-caching=false
-        --cache=true
-        --cache-copy-layers=false
-        --cache-run-layers=true
         --image-fs-extract-retry=5
         --image-download-retry=5
 
@@ -176,9 +164,6 @@ steps:
         --context="." 
         --dockerfile="local_graph_service/Dockerfile"
         --compressed-caching=false
-        --cache=true
-        --cache-copy-layers=false
-        --cache-run-layers=true
         --image-fs-extract-retry=5
         --image-download-retry=5
 

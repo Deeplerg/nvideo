@@ -249,7 +249,7 @@ steps:
       - name: warmer-cache
         path: /cache
     command:
-      - "/kaniko/warmer -i python:3.13-alpine --cache-dir=/cache/images"
+      - /kaniko/warmer -i python:3.13-alpine --cache-dir=/cache/images
 
   - name: image-warmer-remote-transcription
     image: gcr.io/kaniko-project/warmer:latest

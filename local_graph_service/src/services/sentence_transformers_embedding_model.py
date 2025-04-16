@@ -2,11 +2,17 @@ import gc
 import torch.cuda
 from numpy import ndarray
 from sentence_transformers import SentenceTransformer
-from ..config import AppConfiguration
+from shared.graph.embedding_model import EmbeddingModel
 
-class EmbeddingService:
-    def __init__(self):
+class SentenceTransformersEmbeddingModel(EmbeddingModel):
+    def __init__(
+            self,
+            embed_model: str,
+            embed_model_dir: str
+    ):
         self.__model: SentenceTransformer | None = None
+        self.__embed_model = embed_model
+        self.__embed_model_dir = embed_model_dir
 
     def ensure_loaded(self):
         if self.__model is None:
@@ -14,8 +20,8 @@ class EmbeddingService:
 
     def __load(self):
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        model_name = AppConfiguration.GRAPH_EMBED_MODEL
-        cache_dir = AppConfiguration.GRAPH_EMBED_MODEL_DIR
+        model_name = self.__embed_model
+        cache_dir = self.__embed_model_dir
         self.__model = SentenceTransformer(
             model_name,
             device=device,

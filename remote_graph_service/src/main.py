@@ -2,13 +2,15 @@
 from fastapi import FastAPI, Depends
 from fastapi_utils.tasks import repeat_every
 from faststream.rabbit.fastapi import RabbitRouter, Logger
+from google import genai
+
 from .config import AppConfiguration
 from shared.models import *
 from shared.graph import *
-from .services.sentence_transformers_embedding_model import SentenceTransformersEmbeddingModel
+from .services.gemini_embedding_model import GeminiEmbeddingModel
 
 embed_model = AppConfiguration.GRAPH_EMBED_MODEL
-embed_model_full_name = f"graph.local-{embed_model}"
+embed_model_full_name = f"graph.remote-{embed_model}"
 
 
 router = RabbitRouter(AppConfiguration.AMQP_URL, fail_fast=False)
@@ -21,14 +23,21 @@ embedding_model: EmbeddingModel | None = None
 pca_service: PCAService | None = None
 tsne_service: TSNEService | None = None
 umap_service: UMAPService | None = None
+gemini_client : genai.Client | None = None
 
-def get_embedding_model() -> EmbeddingModel:
+def get_gemini_client() -> genai.Client:
+    global gemini_client
+
+    if gemini_client is not None:
+        return gemini_client
+
+    return genai.Client(api_key=AppConfiguration.GRAPH_EMBED_API_KEY)
+
+def get_embedding_service() -> EmbeddingModel:
     global embedding_model
     if embedding_model is None:
-        embedding_model = SentenceTransformersEmbeddingModel(
-            embed_model=embed_model,
-            embed_model_dir=AppConfiguration.GRAPH_EMBED_MODEL_DIR
-        )
+        client = get_gemini_client()
+        embedding_model = GeminiEmbeddingModel(client, embed_model)
     return embedding_model
 
 def get_pca_service() -> PCAService:
@@ -57,7 +66,7 @@ def get_umap_service() -> UMAPService:
 
 def get_graph_service(
         logger: Logger,
-        embed = Depends(get_embedding_model),
+        embed = Depends(get_embedding_service),
         pca = Depends(get_pca_service),
         tsne = Depends(get_tsne_service),
         umap = Depends(get_umap_service)
@@ -70,7 +79,7 @@ def get_graph_service(
         umap=umap,
         use_pca=AppConfiguration.GRAPH_USE_PCA,
         favor_umap=AppConfiguration.GRAPH_FAVOR_UMAP,
-        external_reduction=False
+        external_reduction=AppConfiguration.GRAPH_REDUCE_WITH_API
     )
 
 

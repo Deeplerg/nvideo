@@ -36,7 +36,8 @@ class GeminiLanguageModel(LanguageModel):
 
             response = await self.__client.aio.models.generate_content(
                 model=self.__model_name,
-                contents=contents
+                contents=contents,
+
             )
         else:
             response = await self.__client.aio.models.generate_content(

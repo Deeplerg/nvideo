@@ -7,8 +7,10 @@ class AppConfiguration:
     __RMQ_HOST: str = os.getenv("RABBITMQ_HOST")
     __RMQ_PORT: str = os.getenv("RABBITMQ_PORT")
     AMQP_URL: str = f"{__RMQ_PROTO}://{__RMQ_USER}:{__RMQ_PASS}@{__RMQ_HOST}:{__RMQ_PORT}/"
-    GRAPH_EMBED_MODEL : str = os.getenv("LOCAL_GRAPH_EMBED_MODEL")
-    GRAPH_EMBED_MODEL_DIR : str = os.getenv("GRAPH_EMBED_MODEL_DIR")
+    GRAPH_EMBED_PROVIDER : str = os.getenv("REMOTE_GRAPH_EMBED_PROVIDER")
+    GRAPH_EMBED_MODEL : str = os.getenv("REMOTE_GRAPH_EMBED_MODEL")
+    GRAPH_EMBED_API_KEY : str = os.getenv("REMOTE_GRAPH_EMBED_API_KEY")
+    GRAPH_REDUCE_WITH_API : bool = os.getenv("REMOTE_GRAPH_REDUCE_WITH_API") == "True"
     GRAPH_USE_PCA : bool = os.getenv("GRAPH_USE_PCA") == "True"
     GRAPH_FAVOR_UMAP : bool = bool(os.getenv("GRAPH_FAVOR_UMAP")) == "True"
     GRAPH_PCA_MAX_DIMENSIONS : int = int(os.getenv("GRAPH_PCA_MAX_DIMENSIONS"))

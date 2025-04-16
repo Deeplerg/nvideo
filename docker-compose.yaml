@@ -103,6 +103,21 @@ services:
     networks:
       - app-network
 
+  remote-graph-service:
+    build:
+      dockerfile: remote_graph_service/Dockerfile
+      context: .
+    env_file:
+      - ".env"
+      - ".secret.local.env"
+    ports:
+      - "8007:8000"
+    depends_on:
+      - rabbitmq
+      - api
+    networks:
+      - app-network
+
   local-language-service:
     build:
       dockerfile: local_language_service/Dockerfile

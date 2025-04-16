@@ -162,6 +162,9 @@ steps:
       - TAG=$BRANCH-$COMMIT
       - API_IMAGE_NAME="$REGISTRY/nvideo-api:$TAG"
       - WEB_IMAGE_NAME="$REGISTRY/nvideo-web:$TAG"
+      - REMOTE_TRANSCRIPTION_IMAGE_NAME="$REGISTRY/nvideo-remote-transcription:$TAG"
+      - REMOTE_LANGUAGE_IMAGE_NAME="$REGISTRY/nvideo-remote-language:$TAG"
+      - LOCAL_GRAPH_IMAGE_NAME="$REGISTRY/nvideo-local-graph:$TAG"
 
       - cd nvideo-infra/kustomization/prod
 
@@ -171,6 +174,15 @@ steps:
       - |
         echo Updating Kustomize image for Web: "$WEB_IMAGE_NAME"
       - kustomize edit set image nvideo-web-image-name-placeholder="$WEB_IMAGE_NAME"
+      - |
+        echo Updating Kustomize image for remote transcription: "$REMOTE_TRANSCRIPTION_IMAGE_NAME"
+      - kustomize edit set image nvideo-web-image-name-placeholder="$REMOTE_TRANSCRIPTION_IMAGE_NAME"
+      - |
+        echo Updating Kustomize image for remote language: "$REMOTE_LANGUAGE_IMAGE_NAME"
+      - kustomize edit set image nvideo-web-image-name-placeholder="$REMOTE_LANGUAGE_IMAGE_NAME"
+      - |
+        echo Updating Kustomize image for local graph: "$LOCAL_GRAPH_IMAGE_NAME"
+      - kustomize edit set image nvideo-web-image-name-placeholder="$LOCAL_GRAPH_IMAGE_NAME"
 
   - name: push-infra-changes
     image: alpine/git

@@ -20,6 +20,8 @@ steps:
 
   - name: build-push-api
     image: gcr.io/kaniko-project/executor:debug
+    depends_on:
+      - image-warmer
     environment:
       USERNAME:
         from_secret: registry_username
@@ -54,6 +56,8 @@ steps:
 
   - name: build-push-web
     image: gcr.io/kaniko-project/executor:debug
+    depends_on:
+      - image-warmer
     environment:
       USERNAME:
         from_secret: registry_username
@@ -91,6 +95,7 @@ steps:
     depends_on:
       - build-push-api
       - build-push-web
+      - image-warmer
     environment:
       USERNAME:
         from_secret: registry_username
@@ -128,6 +133,7 @@ steps:
     depends_on:
       - build-push-api
       - build-push-web
+      - image-warmer
     environment:
       USERNAME:
         from_secret: registry_username
@@ -165,6 +171,7 @@ steps:
     depends_on:
       - build-push-api
       - build-push-web
+      - image-warmer
     environment:
       USERNAME:
         from_secret: registry_username

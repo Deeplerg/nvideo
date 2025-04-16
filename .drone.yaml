@@ -16,6 +16,8 @@ steps:
 
   - name: image-warmer-web
     image: gcr.io/kaniko-project/warmer:latest
+    depends_on:
+      - image-warmer-api
     volumes:
       - name: warmer-cache
         path: /cache
@@ -26,6 +28,8 @@ steps:
 
   - name: image-warmer-remote-transcription
     image: gcr.io/kaniko-project/warmer:latest
+    depends_on:
+      - image-warmer-web
     volumes:
       - name: warmer-cache
         path: /cache
@@ -36,6 +40,8 @@ steps:
 
   - name: image-warmer-remote-language
     image: gcr.io/kaniko-project/warmer:latest
+    depends_on:
+      - image-warmer-remote-transcription
     volumes:
       - name: warmer-cache
         path: /cache
@@ -46,6 +52,8 @@ steps:
 
   - name: image-warmer-local-graph
     image: gcr.io/kaniko-project/warmer:latest
+    depends_on:
+      - image-warmer-remote-language
     volumes:
       - name: warmer-cache
         path: /cache

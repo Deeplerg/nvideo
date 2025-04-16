@@ -60,6 +60,90 @@ steps:
         --context="." 
         --dockerfile="web_service/Dockerfile"
 
+  - name: build-push-remote-transcription
+    image: gcr.io/kaniko-project/executor:debug
+    environment:
+      USERNAME:
+        from_secret: registry_username
+      PASSWORD:
+        from_secret: registry_password
+      REGISTRY:
+        from_secret: registry_address
+    commands:
+      - COMMIT=${DRONE_COMMIT_SHA:0:8}
+      - RAW_BRANCH=${DRONE_BRANCH}
+      - BRANCH=$(echo $RAW_BRANCH | sed 's/[^a-zA-Z0-9]/-/g')
+      - TAG=$BRANCH-$COMMIT
+      - IMAGE_NAME=$REGISTRY/nvideo-remote-transcription:$TAG
+
+      - AUTH=$(echo -n $USERNAME:$PASSWORD | base64 -w 0)
+      - |
+        JSON="{ \"auths\": { \"$REGISTRY\": { \"auth\": \"$AUTH\" } } }"
+      - echo $JSON > "/kaniko/.docker/config.json"
+
+      - |
+        echo Building and pushing remote transcription service: "$IMAGE_NAME"
+      - /kaniko/executor 
+        --destination="$IMAGE_NAME" 
+        --context="." 
+        --dockerfile="remote_transcription_service/Dockerfile"
+
+  - name: build-push-remote-language
+    image: gcr.io/kaniko-project/executor:debug
+    environment:
+      USERNAME:
+        from_secret: registry_username
+      PASSWORD:
+        from_secret: registry_password
+      REGISTRY:
+        from_secret: registry_address
+    commands:
+      - COMMIT=${DRONE_COMMIT_SHA:0:8}
+      - RAW_BRANCH=${DRONE_BRANCH}
+      - BRANCH=$(echo $RAW_BRANCH | sed 's/[^a-zA-Z0-9]/-/g')
+      - TAG=$BRANCH-$COMMIT
+      - IMAGE_NAME=$REGISTRY/nvideo-remote-language:$TAG
+
+      - AUTH=$(echo -n $USERNAME:$PASSWORD | base64 -w 0)
+      - |
+        JSON="{ \"auths\": { \"$REGISTRY\": { \"auth\": \"$AUTH\" } } }"
+      - echo $JSON > "/kaniko/.docker/config.json"
+
+      - |
+        echo Building and pushing remote language service: "$IMAGE_NAME"
+      - /kaniko/executor 
+        --destination="$IMAGE_NAME" 
+        --context="." 
+        --dockerfile="remote_language_service/Dockerfile"
+
+  - name: build-push-local-graph
+    image: gcr.io/kaniko-project/executor:debug
+    environment:
+      USERNAME:
+        from_secret: registry_username
+      PASSWORD:
+        from_secret: registry_password
+      REGISTRY:
+        from_secret: registry_address
+    commands:
+      - COMMIT=${DRONE_COMMIT_SHA:0:8}
+      - RAW_BRANCH=${DRONE_BRANCH}
+      - BRANCH=$(echo $RAW_BRANCH | sed 's/[^a-zA-Z0-9]/-/g')
+      - TAG=$BRANCH-$COMMIT
+      - IMAGE_NAME=$REGISTRY/nvideo-local-graph:$TAG
+
+      - AUTH=$(echo -n $USERNAME:$PASSWORD | base64 -w 0)
+      - |
+        JSON="{ \"auths\": { \"$REGISTRY\": { \"auth\": \"$AUTH\" } } }"
+      - echo $JSON > "/kaniko/.docker/config.json"
+
+      - |
+        echo Building and pushing local graph service: "$IMAGE_NAME"
+      - /kaniko/executor 
+        --destination="$IMAGE_NAME" 
+        --context="." 
+        --dockerfile="local_graph_service/Dockerfile"
+
   - name: clone-infra
     image: alpine/git
     commands:

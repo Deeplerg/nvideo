@@ -31,6 +31,7 @@ steps:
         --destination="$API_IMAGE_NAME" 
         --context="." 
         --dockerfile="api_service/Dockerfile"
+        --compressed-caching=false
 
   - name: build-push-web
     image: gcr.io/kaniko-project/executor:debug
@@ -59,6 +60,7 @@ steps:
         --destination="$WEB_IMAGE_NAME" 
         --context="." 
         --dockerfile="web_service/Dockerfile"
+        --compressed-caching=false
 
   - name: build-push-remote-transcription
     image: gcr.io/kaniko-project/executor:debug
@@ -90,6 +92,7 @@ steps:
         --destination="$IMAGE_NAME" 
         --context="." 
         --dockerfile="remote_transcription_service/Dockerfile"
+        --compressed-caching=false
 
   - name: build-push-remote-language
     image: gcr.io/kaniko-project/executor:debug
@@ -121,6 +124,7 @@ steps:
         --destination="$IMAGE_NAME" 
         --context="." 
         --dockerfile="remote_language_service/Dockerfile"
+        --compressed-caching=false
 
   - name: build-push-local-graph
     image: gcr.io/kaniko-project/executor:debug
@@ -152,6 +156,7 @@ steps:
         --destination="$IMAGE_NAME" 
         --context="." 
         --dockerfile="local_graph_service/Dockerfile"
+        --compressed-caching=false
 
   - name: clone-infra
     image: alpine/git
@@ -185,13 +190,13 @@ steps:
       - kustomize edit set image nvideo-web-image-name-placeholder="$WEB_IMAGE_NAME"
       - |
         echo Updating Kustomize image for remote transcription: "$REMOTE_TRANSCRIPTION_IMAGE_NAME"
-      - kustomize edit set image nvideo-web-image-name-placeholder="$REMOTE_TRANSCRIPTION_IMAGE_NAME"
+      - kustomize edit set image nvideo-remote-transcription-image-name-placeholder="$REMOTE_TRANSCRIPTION_IMAGE_NAME"
       - |
         echo Updating Kustomize image for remote language: "$REMOTE_LANGUAGE_IMAGE_NAME"
-      - kustomize edit set image nvideo-web-image-name-placeholder="$REMOTE_LANGUAGE_IMAGE_NAME"
+      - kustomize edit set image nvideo-remote-language-image-name-placeholder="$REMOTE_LANGUAGE_IMAGE_NAME"
       - |
         echo Updating Kustomize image for local graph: "$LOCAL_GRAPH_IMAGE_NAME"
-      - kustomize edit set image nvideo-web-image-name-placeholder="$LOCAL_GRAPH_IMAGE_NAME"
+      - kustomize edit set image nvideo-local-graph-image-name-placeholder="$LOCAL_GRAPH_IMAGE_NAME"
 
   - name: push-infra-changes
     image: alpine/git

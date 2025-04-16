@@ -164,9 +164,6 @@ steps:
         --context="." 
         --dockerfile="local_graph_service/Dockerfile"
         --compressed-caching=false
-        --cache=true
-        --cache-copy-layers=false
-        --cache-run-layers=true
         --image-fs-extract-retry=5
         --image-download-retry=5
 

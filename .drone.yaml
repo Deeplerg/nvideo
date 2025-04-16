@@ -96,6 +96,8 @@ steps:
         --cache-copy-layers=false
         --cache-run-layers=true
         --cache-dir=/cache/images
+        --image-fs-extract-retry=5
+        --image-download-retry=5
 
   - name: build-push-web
     image: gcr.io/kaniko-project/executor:debug
@@ -131,6 +133,8 @@ steps:
         --cache-copy-layers=false
         --cache-run-layers=true
         --cache-dir=/cache/images
+        --image-fs-extract-retry=5
+        --image-download-retry=5
 
   - name: build-push-remote-transcription
     image: gcr.io/kaniko-project/executor:debug
@@ -166,6 +170,8 @@ steps:
         --cache-copy-layers=false
         --cache-run-layers=true
         --cache-dir=/cache/images
+        --image-fs-extract-retry=5
+        --image-download-retry=5
 
   - name: build-push-remote-language
     image: gcr.io/kaniko-project/executor:debug
@@ -201,6 +207,8 @@ steps:
         --cache-copy-layers=false
         --cache-run-layers=true
         --cache-dir=/cache/images
+        --image-fs-extract-retry=5
+        --image-download-retry=5
 
   - name: build-push-local-graph
     image: gcr.io/kaniko-project/executor:debug
@@ -236,6 +244,8 @@ steps:
         --cache-copy-layers=false
         --cache-run-layers=true
         --cache-dir=/cache/images
+        --image-fs-extract-retry=5
+        --image-download-retry=5
 
   - name: clone-infra
     image: alpine/git

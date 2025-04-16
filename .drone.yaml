@@ -177,6 +177,9 @@ steps:
     depends_on:
       - build-push-api
       - build-push-web
+      - build-push-remote-transcription
+      - build-push-remote-language
+      - build-push-local-graph
       - clone-infra
       - update-infra
     commands:

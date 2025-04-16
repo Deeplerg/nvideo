@@ -26,7 +26,7 @@ class GeminiTranscriptionModel(TranscriptionModel):
 
     def transcribe(self, file_path):
         audio = self.__client.files.upload(file=file_path)
-        prompt = AppConfiguration.GEMINI_TRANSCRIPTION_PROMPT
+        prompt = AppConfiguration.LLM_TRANSCRIPTION_PROMPT
 
         response : GenerateContentResponse | None = None
         retries = 5

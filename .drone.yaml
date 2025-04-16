@@ -270,6 +270,16 @@ steps:
         --dockerfile="remote_language_service/Dockerfile"
         --compressed-caching=false
 
+  - name: build-no-push-local-graph
+    image: gcr.io/kaniko-project/executor:debug
+    commands:
+      - echo "Building local graph service"
+      - /kaniko/executor
+        --no-push
+        --context="."
+        --dockerfile="local_graph_service/Dockerfile"
+        --compressed-caching=false
+
 trigger:
   branch:
     - main

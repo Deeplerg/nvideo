@@ -4,237 +4,6 @@ type: kubernetes
 name: prod-build-push
 
 steps:
-  - name: build-push-api
-    image: gcr.io/kaniko-project/executor:debug
-    environment:
-      USERNAME:
-        from_secret: registry_username
-      PASSWORD:
-        from_secret: registry_password
-      REGISTRY:
-        from_secret: registry_address
-    commands:
-      - COMMIT=${DRONE_COMMIT_SHA:0:8}
-      - RAW_BRANCH=${DRONE_BRANCH}
-      - BRANCH=$(echo $RAW_BRANCH | sed 's/[^a-zA-Z0-9]/-/g')
-      - TAG=$BRANCH-$COMMIT
-      - API_IMAGE_NAME=$REGISTRY/nvideo-api:$TAG
-
-      - AUTH=$(echo -n $USERNAME:$PASSWORD | base64 -w 0)
-      - |
-        JSON="{ \"auths\": { \"$REGISTRY\": { \"auth\": \"$AUTH\" } } }"
-      - echo $JSON > "/kaniko/.docker/config.json"
-
-      - |
-        echo Building and pushing API service: $API_IMAGE_NAME
-      - /kaniko/executor 
-        --destination="$API_IMAGE_NAME" 
-        --context="." 
-        --dockerfile="api_service/Dockerfile"
-        --compressed-caching=false
-
-  - name: build-push-web
-    image: gcr.io/kaniko-project/executor:debug
-    environment:
-      USERNAME:
-        from_secret: registry_username
-      PASSWORD:
-        from_secret: registry_password
-      REGISTRY:
-        from_secret: registry_address
-    commands:
-      - COMMIT=${DRONE_COMMIT_SHA:0:8}
-      - RAW_BRANCH=${DRONE_BRANCH}
-      - BRANCH=$(echo $RAW_BRANCH | sed 's/[^a-zA-Z0-9]/-/g')
-      - TAG=$BRANCH-$COMMIT
-      - WEB_IMAGE_NAME=$REGISTRY/nvideo-web:$TAG
-
-      - AUTH=$(echo -n $USERNAME:$PASSWORD | base64 -w 0)
-      - |
-        JSON="{ \"auths\": { \"$REGISTRY\": { \"auth\": \"$AUTH\" } } }"
-      - echo $JSON > "/kaniko/.docker/config.json"
-
-      - |
-        echo Building and pushing Web service: "$WEB_IMAGE_NAME"
-      - /kaniko/executor 
-        --destination="$WEB_IMAGE_NAME" 
-        --context="." 
-        --dockerfile="web_service/Dockerfile"
-        --compressed-caching=false
-
-  - name: build-push-remote-transcription
-    image: gcr.io/kaniko-project/executor:debug
-    depends_on:
-      - build-push-api
-      - build-push-web
-    environment:
-      USERNAME:
-        from_secret: registry_username
-      PASSWORD:
-        from_secret: registry_password
-      REGISTRY:
-        from_secret: registry_address
-    commands:
-      - COMMIT=${DRONE_COMMIT_SHA:0:8}
-      - RAW_BRANCH=${DRONE_BRANCH}
-      - BRANCH=$(echo $RAW_BRANCH | sed 's/[^a-zA-Z0-9]/-/g')
-      - TAG=$BRANCH-$COMMIT
-      - IMAGE_NAME=$REGISTRY/nvideo-remote-transcription:$TAG
-
-      - AUTH=$(echo -n $USERNAME:$PASSWORD | base64 -w 0)
-      - |
-        JSON="{ \"auths\": { \"$REGISTRY\": { \"auth\": \"$AUTH\" } } }"
-      - echo $JSON > "/kaniko/.docker/config.json"
-
-      - |
-        echo Building and pushing remote transcription service: "$IMAGE_NAME"
-      - /kaniko/executor 
-        --destination="$IMAGE_NAME" 
-        --context="." 
-        --dockerfile="remote_transcription_service/Dockerfile"
-        --compressed-caching=false
-
-  - name: build-push-remote-language
-    image: gcr.io/kaniko-project/executor:debug
-    depends_on:
-      - build-push-api
-      - build-push-web
-    environment:
-      USERNAME:
-        from_secret: registry_username
-      PASSWORD:
-        from_secret: registry_password
-      REGISTRY:
-        from_secret: registry_address
-    commands:
-      - COMMIT=${DRONE_COMMIT_SHA:0:8}
-      - RAW_BRANCH=${DRONE_BRANCH}
-      - BRANCH=$(echo $RAW_BRANCH | sed 's/[^a-zA-Z0-9]/-/g')
-      - TAG=$BRANCH-$COMMIT
-      - IMAGE_NAME=$REGISTRY/nvideo-remote-language:$TAG
-
-      - AUTH=$(echo -n $USERNAME:$PASSWORD | base64 -w 0)
-      - |
-        JSON="{ \"auths\": { \"$REGISTRY\": { \"auth\": \"$AUTH\" } } }"
-      - echo $JSON > "/kaniko/.docker/config.json"
-
-      - |
-        echo Building and pushing remote language service: "$IMAGE_NAME"
-      - /kaniko/executor 
-        --destination="$IMAGE_NAME" 
-        --context="." 
-        --dockerfile="remote_language_service/Dockerfile"
-        --compressed-caching=false
-
-  - name: build-push-local-graph
-    image: gcr.io/kaniko-project/executor:debug
-    depends_on:
-      - build-push-api
-      - build-push-web
-    environment:
-      USERNAME:
-        from_secret: registry_username
-      PASSWORD:
-        from_secret: registry_password
-      REGISTRY:
-        from_secret: registry_address
-    commands:
-      - COMMIT=${DRONE_COMMIT_SHA:0:8}
-      - RAW_BRANCH=${DRONE_BRANCH}
-      - BRANCH=$(echo $RAW_BRANCH | sed 's/[^a-zA-Z0-9]/-/g')
-      - TAG=$BRANCH-$COMMIT
-      - IMAGE_NAME=$REGISTRY/nvideo-local-graph:$TAG
-
-      - AUTH=$(echo -n $USERNAME:$PASSWORD | base64 -w 0)
-      - |
-        JSON="{ \"auths\": { \"$REGISTRY\": { \"auth\": \"$AUTH\" } } }"
-      - echo $JSON > "/kaniko/.docker/config.json"
-
-      - |
-        echo Building and pushing local graph service: "$IMAGE_NAME"
-      - /kaniko/executor 
-        --destination="$IMAGE_NAME" 
-        --context="." 
-        --dockerfile="local_graph_service/Dockerfile"
-        --compressed-caching=false
-
-  - name: clone-infra
-    image: alpine/git
-    commands:
-      - git clone https://github.com/Deeplerg/nvideo-infra
-
-  - name: update-infra
-    image: registry.k8s.io/kustomize/kustomize:v5.0.0
-    depends_on:
-      - clone-infra
-    environment:
-      REGISTRY:
-        from_secret: registry_address
-    commands:
-      - COMMIT=${DRONE_COMMIT_SHA:0:8}
-      - BRANCH=main
-      - TAG=$BRANCH-$COMMIT
-      - API_IMAGE_NAME="$REGISTRY/nvideo-api:$TAG"
-      - WEB_IMAGE_NAME="$REGISTRY/nvideo-web:$TAG"
-      - REMOTE_TRANSCRIPTION_IMAGE_NAME="$REGISTRY/nvideo-remote-transcription:$TAG"
-      - REMOTE_LANGUAGE_IMAGE_NAME="$REGISTRY/nvideo-remote-language:$TAG"
-      - LOCAL_GRAPH_IMAGE_NAME="$REGISTRY/nvideo-local-graph:$TAG"
-
-      - cd nvideo-infra/kustomization/prod
-
-      - |
-        echo Updating Kustomize image for API: "$API_IMAGE_NAME"
-      - kustomize edit set image nvideo-api-image-name-placeholder="$API_IMAGE_NAME"
-      - |
-        echo Updating Kustomize image for Web: "$WEB_IMAGE_NAME"
-      - kustomize edit set image nvideo-web-image-name-placeholder="$WEB_IMAGE_NAME"
-      - |
-        echo Updating Kustomize image for remote transcription: "$REMOTE_TRANSCRIPTION_IMAGE_NAME"
-      - kustomize edit set image nvideo-remote-transcription-image-name-placeholder="$REMOTE_TRANSCRIPTION_IMAGE_NAME"
-      - |
-        echo Updating Kustomize image for remote language: "$REMOTE_LANGUAGE_IMAGE_NAME"
-      - kustomize edit set image nvideo-remote-language-image-name-placeholder="$REMOTE_LANGUAGE_IMAGE_NAME"
-      - |
-        echo Updating Kustomize image for local graph: "$LOCAL_GRAPH_IMAGE_NAME"
-      - kustomize edit set image nvideo-local-graph-image-name-placeholder="$LOCAL_GRAPH_IMAGE_NAME"
-
-  - name: push-infra-changes
-    image: alpine/git
-    depends_on:
-      - build-push-api
-      - build-push-web
-      - build-push-remote-transcription
-      - build-push-remote-language
-      - build-push-local-graph
-      - clone-infra
-      - update-infra
-    commands:
-      - cd nvideo-infra
-      - git checkout main
-      - git config user.email "drone@deeplerg.dev"
-      - git config user.name "Drone"
-      - git add .
-      - git commit -am "Update image tags" --author="Drone <drone@deeplerg.dev>" --allow-empty
-      - git push
-
-trigger:
-  branch:
-    - main
-  event:
-    include:
-      - promote
-      - rollback
-      # - push
-  target:
-    - production
-
-
----
-kind: pipeline
-type: kubernetes
-name: prod-build-only
-
-steps:
   - name: image-warmer-api
     image: gcr.io/kaniko-project/warmer:latest
     volumes:
@@ -285,16 +54,32 @@ steps:
       - --dockerfile=local_graph_service/Dockerfile
       - --cache-dir=/cache/images
 
-  - name: build-no-push-api
+  - name: build-push-api
     image: gcr.io/kaniko-project/executor:debug
-    volumes:
-      - name: warmer-cache
-        path: /cache
+    environment:
+      USERNAME:
+        from_secret: registry_username
+      PASSWORD:
+        from_secret: registry_password
+      REGISTRY:
+        from_secret: registry_address
     commands:
-      - echo "Building API service"
-      - /kaniko/executor
-        --no-push
-        --context="."
+      - COMMIT=${DRONE_COMMIT_SHA:0:8}
+      - RAW_BRANCH=${DRONE_BRANCH}
+      - BRANCH=$(echo $RAW_BRANCH | sed 's/[^a-zA-Z0-9]/-/g')
+      - TAG=$BRANCH-$COMMIT
+      - API_IMAGE_NAME=$REGISTRY/nvideo-api:$TAG
+
+      - AUTH=$(echo -n $USERNAME:$PASSWORD | base64 -w 0)
+      - |
+        JSON="{ \"auths\": { \"$REGISTRY\": { \"auth\": \"$AUTH\" } } }"
+      - echo $JSON > "/kaniko/.docker/config.json"
+
+      - |
+        echo Building and pushing API service: $API_IMAGE_NAME
+      - /kaniko/executor 
+        --destination="$API_IMAGE_NAME" 
+        --context="." 
         --dockerfile="api_service/Dockerfile"
         --compressed-caching=false
         --cache=true
@@ -303,16 +88,32 @@ steps:
         --no-push-cache
         --cache-dir=/cache/images
 
-  - name: build-no-push-web
+  - name: build-push-web
     image: gcr.io/kaniko-project/executor:debug
-    volumes:
-      - name: warmer-cache
-        path: /cache
+    environment:
+      USERNAME:
+        from_secret: registry_username
+      PASSWORD:
+        from_secret: registry_password
+      REGISTRY:
+        from_secret: registry_address
     commands:
-      - echo "Building Web service"
-      - /kaniko/executor
-        --no-push
-        --context="."
+      - COMMIT=${DRONE_COMMIT_SHA:0:8}
+      - RAW_BRANCH=${DRONE_BRANCH}
+      - BRANCH=$(echo $RAW_BRANCH | sed 's/[^a-zA-Z0-9]/-/g')
+      - TAG=$BRANCH-$COMMIT
+      - WEB_IMAGE_NAME=$REGISTRY/nvideo-web:$TAG
+
+      - AUTH=$(echo -n $USERNAME:$PASSWORD | base64 -w 0)
+      - |
+        JSON="{ \"auths\": { \"$REGISTRY\": { \"auth\": \"$AUTH\" } } }"
+      - echo $JSON > "/kaniko/.docker/config.json"
+
+      - |
+        echo Building and pushing Web service: "$WEB_IMAGE_NAME"
+      - /kaniko/executor 
+        --destination="$WEB_IMAGE_NAME" 
+        --context="." 
         --dockerfile="web_service/Dockerfile"
         --compressed-caching=false
         --cache=true
@@ -321,16 +122,35 @@ steps:
         --no-push-cache
         --cache-dir=/cache/images
 
-  - name: build-no-push-remote-transcription
+  - name: build-push-remote-transcription
     image: gcr.io/kaniko-project/executor:debug
-    volumes:
-      - name: warmer-cache
-        path: /cache
+    depends_on:
+      - build-push-api
+      - build-push-web
+    environment:
+      USERNAME:
+        from_secret: registry_username
+      PASSWORD:
+        from_secret: registry_password
+      REGISTRY:
+        from_secret: registry_address
     commands:
-      - echo "Building remote transcription service"
-      - /kaniko/executor
-        --no-push
-        --context="."
+      - COMMIT=${DRONE_COMMIT_SHA:0:8}
+      - RAW_BRANCH=${DRONE_BRANCH}
+      - BRANCH=$(echo $RAW_BRANCH | sed 's/[^a-zA-Z0-9]/-/g')
+      - TAG=$BRANCH-$COMMIT
+      - IMAGE_NAME=$REGISTRY/nvideo-remote-transcription:$TAG
+
+      - AUTH=$(echo -n $USERNAME:$PASSWORD | base64 -w 0)
+      - |
+        JSON="{ \"auths\": { \"$REGISTRY\": { \"auth\": \"$AUTH\" } } }"
+      - echo $JSON > "/kaniko/.docker/config.json"
+
+      - |
+        echo Building and pushing remote transcription service: "$IMAGE_NAME"
+      - /kaniko/executor 
+        --destination="$IMAGE_NAME" 
+        --context="." 
         --dockerfile="remote_transcription_service/Dockerfile"
         --compressed-caching=false
         --cache=true
@@ -339,16 +159,35 @@ steps:
         --no-push-cache
         --cache-dir=/cache/images
 
-  - name: build-no-push-remote-language
+  - name: build-push-remote-language
     image: gcr.io/kaniko-project/executor:debug
-    volumes:
-      - name: warmer-cache
-        path: /cache
+    depends_on:
+      - build-push-api
+      - build-push-web
+    environment:
+      USERNAME:
+        from_secret: registry_username
+      PASSWORD:
+        from_secret: registry_password
+      REGISTRY:
+        from_secret: registry_address
     commands:
-      - echo "Building remote language service"
-      - /kaniko/executor
-        --no-push
-        --context="."
+      - COMMIT=${DRONE_COMMIT_SHA:0:8}
+      - RAW_BRANCH=${DRONE_BRANCH}
+      - BRANCH=$(echo $RAW_BRANCH | sed 's/[^a-zA-Z0-9]/-/g')
+      - TAG=$BRANCH-$COMMIT
+      - IMAGE_NAME=$REGISTRY/nvideo-remote-language:$TAG
+
+      - AUTH=$(echo -n $USERNAME:$PASSWORD | base64 -w 0)
+      - |
+        JSON="{ \"auths\": { \"$REGISTRY\": { \"auth\": \"$AUTH\" } } }"
+      - echo $JSON > "/kaniko/.docker/config.json"
+
+      - |
+        echo Building and pushing remote language service: "$IMAGE_NAME"
+      - /kaniko/executor 
+        --destination="$IMAGE_NAME" 
+        --context="." 
         --dockerfile="remote_language_service/Dockerfile"
         --compressed-caching=false
         --cache=true
@@ -357,16 +196,35 @@ steps:
         --no-push-cache
         --cache-dir=/cache/images
 
-  - name: build-no-push-local-graph
+  - name: build-push-local-graph
     image: gcr.io/kaniko-project/executor:debug
-    volumes:
-      - name: warmer-cache
-        path: /cache
+    depends_on:
+      - build-push-api
+      - build-push-web
+    environment:
+      USERNAME:
+        from_secret: registry_username
+      PASSWORD:
+        from_secret: registry_password
+      REGISTRY:
+        from_secret: registry_address
     commands:
-      - echo "Building local graph service"
-      - /kaniko/executor
-        --no-push
-        --context="."
+      - COMMIT=${DRONE_COMMIT_SHA:0:8}
+      - RAW_BRANCH=${DRONE_BRANCH}
+      - BRANCH=$(echo $RAW_BRANCH | sed 's/[^a-zA-Z0-9]/-/g')
+      - TAG=$BRANCH-$COMMIT
+      - IMAGE_NAME=$REGISTRY/nvideo-local-graph:$TAG
+
+      - AUTH=$(echo -n $USERNAME:$PASSWORD | base64 -w 0)
+      - |
+        JSON="{ \"auths\": { \"$REGISTRY\": { \"auth\": \"$AUTH\" } } }"
+      - echo $JSON > "/kaniko/.docker/config.json"
+
+      - |
+        echo Building and pushing local graph service: "$IMAGE_NAME"
+      - /kaniko/executor 
+        --destination="$IMAGE_NAME" 
+        --context="." 
         --dockerfile="local_graph_service/Dockerfile"
         --compressed-caching=false
         --cache=true
@@ -375,10 +233,138 @@ steps:
         --no-push-cache
         --cache-dir=/cache/images
 
+  - name: clone-infra
+    image: alpine/git
+    commands:
+      - git clone https://github.com/Deeplerg/nvideo-infra
+
+  - name: update-infra
+    image: registry.k8s.io/kustomize/kustomize:v5.0.0
+    depends_on:
+      - clone-infra
+    environment:
+      REGISTRY:
+        from_secret: registry_address
+    commands:
+      - COMMIT=${DRONE_COMMIT_SHA:0:8}
+      - BRANCH=main
+      - TAG=$BRANCH-$COMMIT
+      - API_IMAGE_NAME="$REGISTRY/nvideo-api:$TAG"
+      - WEB_IMAGE_NAME="$REGISTRY/nvideo-web:$TAG"
+      - REMOTE_TRANSCRIPTION_IMAGE_NAME="$REGISTRY/nvideo-remote-transcription:$TAG"
+      - REMOTE_LANGUAGE_IMAGE_NAME="$REGISTRY/nvideo-remote-language:$TAG"
+      - LOCAL_GRAPH_IMAGE_NAME="$REGISTRY/nvideo-local-graph:$TAG"
+
+      - cd nvideo-infra/kustomization/prod
+
+      - |
+        echo Updating Kustomize image for API: "$API_IMAGE_NAME"
+      - kustomize edit set image nvideo-api-image-name-placeholder="$API_IMAGE_NAME"
+      - |
+        echo Updating Kustomize image for Web: "$WEB_IMAGE_NAME"
+      - kustomize edit set image nvideo-web-image-name-placeholder="$WEB_IMAGE_NAME"
+      - |
+        echo Updating Kustomize image for remote transcription: "$REMOTE_TRANSCRIPTION_IMAGE_NAME"
+      - kustomize edit set image nvideo-remote-transcription-image-name-placeholder="$REMOTE_TRANSCRIPTION_IMAGE_NAME"
+      - |
+        echo Updating Kustomize image for remote language: "$REMOTE_LANGUAGE_IMAGE_NAME"
+      - kustomize edit set image nvideo-remote-language-image-name-placeholder="$REMOTE_LANGUAGE_IMAGE_NAME"
+      - |
+        echo Updating Kustomize image for local graph: "$LOCAL_GRAPH_IMAGE_NAME"
+      - kustomize edit set image nvideo-local-graph-image-name-placeholder="$LOCAL_GRAPH_IMAGE_NAME"
+
+#  - name: push-infra-changes
+#    image: alpine/git
+#    depends_on:
+#      - build-push-api
+#      - build-push-web
+#      - build-push-remote-transcription
+#      - build-push-remote-language
+#      - build-push-local-graph
+#      - clone-infra
+#      - update-infra
+#    commands:
+#      - cd nvideo-infra
+#      - git checkout main
+#      - git config user.email "drone@deeplerg.dev"
+#      - git config user.name "Drone"
+#      - git add .
+#      - git commit -am "Update image tags" --author="Drone <drone@deeplerg.dev>" --allow-empty
+#      - git push
+
 volumes:
   - name: warmer-cache
     claim:
       name: kaniko-warmer-pvc
+
+trigger:
+  branch:
+    - main
+  event:
+    include:
+      - promote
+      - rollback
+      # - push
+  target:
+    - production
+    - exp/cicd
+
+
+---
+kind: pipeline
+type: kubernetes
+name: prod-build-only
+
+steps:
+  - name: build-no-push-api
+    image: gcr.io/kaniko-project/executor:debug
+    commands:
+      - echo "Building API service"
+      - /kaniko/executor
+        --no-push
+        --context="."
+        --dockerfile="api_service/Dockerfile"
+        --compressed-caching=false
+
+  - name: build-no-push-web
+    image: gcr.io/kaniko-project/executor:debug
+    commands:
+      - echo "Building Web service"
+      - /kaniko/executor
+        --no-push
+        --context="."
+        --dockerfile="web_service/Dockerfile"
+        --compressed-caching=false
+
+  - name: build-no-push-remote-transcription
+    image: gcr.io/kaniko-project/executor:debug
+    commands:
+      - echo "Building remote transcription service"
+      - /kaniko/executor
+        --no-push
+        --context="."
+        --dockerfile="remote_transcription_service/Dockerfile"
+        --compressed-caching=false
+
+  - name: build-no-push-remote-language
+    image: gcr.io/kaniko-project/executor:debug
+    commands:
+      - echo "Building remote language service"
+      - /kaniko/executor
+        --no-push
+        --context="."
+        --dockerfile="remote_language_service/Dockerfile"
+        --compressed-caching=false
+
+  - name: build-no-push-local-graph
+    image: gcr.io/kaniko-project/executor:debug
+    commands:
+      - echo "Building local graph service"
+      - /kaniko/executor
+        --no-push
+        --context="."
+        --dockerfile="local_graph_service/Dockerfile"
+        --compressed-caching=false
 
 trigger:
   branch:

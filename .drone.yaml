@@ -238,6 +238,7 @@ steps:
         --no-push 
         --context="." 
         --dockerfile="api_service/Dockerfile"
+        --compressed-caching=false
 
   - name: build-no-push-web
     image: gcr.io/kaniko-project/executor:debug
@@ -247,6 +248,7 @@ steps:
         --no-push 
         --context="." 
         --dockerfile="web_service/Dockerfile"
+        --compressed-caching=false
 
   - name: build-no-push-remote-transcription
     image: gcr.io/kaniko-project/executor:debug
@@ -256,6 +258,7 @@ steps:
         --no-push
         --context="."
         --dockerfile="remote_transcription_service/Dockerfile"
+        --compressed-caching=false
 
   - name: build-no-push-remote-language
     image: gcr.io/kaniko-project/executor:debug
@@ -265,10 +268,12 @@ steps:
         --no-push
         --context="."
         --dockerfile="remote_language_service/Dockerfile"
+        --compressed-caching=false
 
 trigger:
   branch:
     - main
+    - exp/cicd
   event:
     - pull_request
     - push

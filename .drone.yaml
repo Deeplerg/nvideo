@@ -240,9 +240,8 @@ steps:
     volumes:
       - name: warmer-cache
         path: /cache
-    entrypoint:
-      - /kaniko/warmer
     command:
+      - /kaniko/warmer
       - --dockerfile=api_service/Dockerfile
       - --cache-dir=/cache/images
 

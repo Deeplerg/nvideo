@@ -241,7 +241,9 @@ steps:
       - name: warmer-cache
         path: /cache
     command:
-      - "/kaniko/warmer --dockerfile=api_service/Dockerfile --cache-dir=/cache/images"
+      - /kaniko/warmer
+      - --dockerfile=api_service/Dockerfile
+      - --cache-dir=/cache/images
 
   - name: image-warmer-web
     image: gcr.io/kaniko-project/warmer:latest
@@ -249,7 +251,7 @@ steps:
       - name: warmer-cache
         path: /cache
     command:
-      - /kaniko/warmer -i python:3.13-alpine --cache-dir=/cache/images
+      - "/kaniko/warmer --dockerfile=web_service/Dockerfile --cache-dir=/cache/images"
 
   - name: image-warmer-remote-transcription
     image: gcr.io/kaniko-project/warmer:latest

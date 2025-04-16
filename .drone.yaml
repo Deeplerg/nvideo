@@ -137,8 +137,6 @@ steps:
   - name: build-push-remote-transcription
     image: gcr.io/kaniko-project/executor:debug
     depends_on:
-      - build-push-api
-      - build-push-web
       - image-warmer-remote-transcription
     environment:
       USERNAME:
@@ -175,8 +173,6 @@ steps:
   - name: build-push-remote-language
     image: gcr.io/kaniko-project/executor:debug
     depends_on:
-      - build-push-api
-      - build-push-web
       - image-warmer-remote-language
     environment:
       USERNAME:
@@ -213,8 +209,6 @@ steps:
   - name: build-push-local-graph
     image: gcr.io/kaniko-project/executor:debug
     depends_on:
-      - build-push-api
-      - build-push-web
       - image-warmer-local-graph
     environment:
       USERNAME:

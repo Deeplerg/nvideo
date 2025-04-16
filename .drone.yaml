@@ -103,6 +103,7 @@ steps:
     image: gcr.io/kaniko-project/executor:debug
     depends_on:
       - image-warmer-web
+      - build-push-api
     environment:
       USERNAME:
         from_secret: registry_username
@@ -140,6 +141,7 @@ steps:
     image: gcr.io/kaniko-project/executor:debug
     depends_on:
       - image-warmer-remote-transcription
+      - build-push-web
     environment:
       USERNAME:
         from_secret: registry_username
@@ -177,6 +179,7 @@ steps:
     image: gcr.io/kaniko-project/executor:debug
     depends_on:
       - image-warmer-remote-language
+      - build-push-remote-transcription
     environment:
       USERNAME:
         from_secret: registry_username
@@ -214,6 +217,7 @@ steps:
     image: gcr.io/kaniko-project/executor:debug
     depends_on:
       - image-warmer-local-graph
+      - build-push-remote-language
     environment:
       USERNAME:
         from_secret: registry_username

@@ -28,17 +28,39 @@
     <h2 class="subtitle">Итоговый результат</h2>
     {% if job.type == 'summary' %}
     <div id="final-summary-content" class="content">
-        {% if artifacts.summary %} {% for chunk in artifacts.summary %}
-        <div class="sub-accordion-item">
-            <div class="sub-accordion-header" data-target="summary-final-chunk-{{ loop.index }}"><a
-                    href="{{ utils.generate_youtube_link(job.video_id, chunk.start_time_ms) }}" target="_blank"
-                    class="youtube-link" onclick="event.stopPropagation()"> [{{
-                utils.format_ms_range(chunk.start_time_ms, chunk.end_time_ms) }}] </a> <span class="icon is-small"><i
-                    class="fas fa-chevron-down"></i></span></div>
-            <div id="summary-final-chunk-{{ loop.index }}" class="sub-accordion-content"> {{ chunk.text }}</div>
-        </div>
-        {% endfor %} {% elif job.status == 'completed' %} <p>Суммаризация завершена, но артефакт не найден или пуст.</p>
-        {% else %} <p>Суммаризация еще не завершена.</p> {% endif %}
+        {% if artifacts.summary %}
+            {% if artifacts.summary.overall_summary %}
+                <div class="sub-accordion-item">
+                    <div class="sub-accordion-header" data-target="summary-overall-summary">
+                        <span>
+                            Краткое содержание
+                        </span>
+                        <span class="icon is-small">
+                            <i class="fas fa-chevron-down"></i>
+                        </span>
+                    </div>
+                    <div id="summary-overall-summary" class="sub-accordion-content">
+                        {{ artifacts.summary.overall_summary }}
+                    </div>
+                </div>
+            {% endif %}
+            {% for chunk in artifacts.summary.chunks %}
+                <div class="sub-accordion-item">
+                    <div class="sub-accordion-header" data-target="summary-final-chunk-{{ loop.index }}">
+                        <a href="{{ utils.generate_youtube_link(job.video_id, chunk.start_time_ms) }}" target="_blank"
+                            class="youtube-link" onclick="event.stopPropagation()">
+                            [{{ utils.format_ms_range(chunk.start_time_ms, chunk.end_time_ms) }}]
+                        </a>
+                        <span class="icon is-small">
+                            <i class="fas fa-chevron-down"></i>
+                        </span>
+                    </div>
+                    <div id="summary-final-chunk-{{ loop.index }}" class="sub-accordion-content"> {{ chunk.text }}</div>
+                </div>
+            {% endfor %}
+        {% elif job.status == 'completed' %} <p>Суммаризация завершена, но артефакт не найден или пуст.</p>
+        {% else %} <p>Суммаризация еще не завершена.</p>
+        {% endif %}
     </div>
     {% endif %}
     {% if job.type == 'graph' %}
@@ -108,18 +130,40 @@
     {% endif %}
     {% if artifacts.summary and job.type != 'summary' %}
     <div class="accordion-item">
-        <div class="accordion-header" data-target="summary-content"> Промежуточная суммаризация <span
-                class="icon is-small"><i class="fas fa-chevron-down"></i></span></div>
+        <div class="accordion-header" data-target="summary-content"> Промежуточная суммаризация
+            <span class="icon is-small">
+                <i class="fas fa-chevron-down"></i>
+            </span>
+        </div>
         <div id="summary-content" class="accordion-content content">
-            {% for chunk in artifacts.summary %}
-            <div class="sub-accordion-item">
-                <div class="sub-accordion-header" data-target="summary-int-chunk-{{ loop.index }}"><a
-                        href="{{ utils.generate_youtube_link(job.video_id, chunk.start_time_ms) }}" target="_blank"
-                        class="youtube-link" onclick="event.stopPropagation()"> [{{
-                    utils.format_ms_range(chunk.start_time_ms, chunk.end_time_ms) }}] </a> <span
-                        class="icon is-small"><i class="fas fa-chevron-down"></i></span></div>
-                <div id="summary-int-chunk-{{ loop.index }}" class="sub-accordion-content"> {{ chunk.text }}</div>
-            </div>
+            {% if artifacts.summary.overall_summary %}
+                <div class="sub-accordion-item">
+                    <div class="sub-accordion-header" data-target="summary-overall-summary">
+                        <span>
+                            Краткое содержание
+                        </span>
+                        <span class="icon is-small">
+                            <i class="fas fa-chevron-down"></i>
+                        </span>
+                    </div>
+                    <div id="summary-overall-summary" class="sub-accordion-content">
+                        {{ artifacts.summary.overall_summary }}
+                    </div>
+                </div>
+            {% endif %}
+            {% for chunk in artifacts.summary.chunks %}
+                <div class="sub-accordion-item">
+                    <div class="sub-accordion-header" data-target="summary-final-chunk-{{ loop.index }}">
+                        <a href="{{ utils.generate_youtube_link(job.video_id, chunk.start_time_ms) }}" target="_blank"
+                            class="youtube-link" onclick="event.stopPropagation()">
+                            [{{ utils.format_ms_range(chunk.start_time_ms, chunk.end_time_ms) }}]
+                        </a>
+                        <span class="icon is-small">
+                            <i class="fas fa-chevron-down"></i>
+                        </span>
+                    </div>
+                    <div id="summary-final-chunk-{{ loop.index }}" class="sub-accordion-content"> {{ chunk.text }}</div>
+                </div>
             {% endfor %}
         </div>
     </div>

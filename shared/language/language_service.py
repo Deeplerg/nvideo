@@ -17,12 +17,14 @@ class LanguageService:
             logger: Logger,
             model: LanguageModel,
             summary_system_prompt: str,
+            overall_summary_system_prompt: str,
             entity_system_prompt: str,
             empty_chunk_threshold_ms: int
     ):
         self.__logger = logger
         self.__model = model
         self.__summary_system_prompt = summary_system_prompt
+        self.__overall_summary_system_prompt = overall_summary_system_prompt
         self.__entity_system_prompt = entity_system_prompt
         self.__empty_chunk_threshold_ms = empty_chunk_threshold_ms
 
@@ -44,6 +46,25 @@ class LanguageService:
                 f"Summarized chunk at {chunk.start_time_ms}, summary length: {len(summary)}")
 
         return summaries
+
+    async def generate_overall_summary(self, chunk_summaries: list[ChunkSummaryResponse]) -> str:
+        summaries = ""
+
+        for chunk in chunk_summaries:
+            summaries += self.__create_chunk_message(
+                chunk.text,
+                chunk.start_time_ms,
+                chunk.end_time_ms) + "\n\n\n"
+
+        response = await self.__model.chat(
+            messages=[
+                TextMessage(summaries)
+            ],
+            system_prompt=self.__overall_summary_system_prompt
+        )
+
+        return response
+
 
     async def generate_entity_relations(self, chunks: list[TranscriptionChunkResult]) -> EntityRelations:
         entities: list[Entity] = []
@@ -105,10 +126,7 @@ class LanguageService:
         return f"{minutes}:{remaining_seconds:02d}"
 
     async def __summarize_chunk(self, chunk : TranscriptionChunkResult) -> str:
-        start_minutes_seconds = self.__ms_to_minutes_seconds(chunk.start_time_ms)
-        end_minutes_seconds = self.__ms_to_minutes_seconds(chunk.end_time_ms)
-
-        message = f"[Chunk {start_minutes_seconds} - {end_minutes_seconds}]\n{chunk.text}"
+        message = self.__create_chunk_message(chunk.text, chunk.start_time_ms, chunk.end_time_ms)
 
         response = await self.__model.chat(
             messages=[
@@ -118,6 +136,13 @@ class LanguageService:
         )
 
         return response
+
+    def __create_chunk_message(self, text: str, start_ms: int, end_ms: int):
+        start_minutes_seconds = self.__ms_to_minutes_seconds(start_ms)
+        end_minutes_seconds = self.__ms_to_minutes_seconds(end_ms)
+
+        return (f"[Chunk {start_minutes_seconds} - {end_minutes_seconds}]"
+                f"\n{text}")
 
     async def __extract_entity_relations_chunk(
             self,

@@ -12,6 +12,10 @@ class ChunkSummaryResult(BaseModel):
     start_time_ms: int
     end_time_ms: int
 
+class SummaryResult(BaseModel):
+    chunks: list[ChunkSummaryResult]
+    overall_summary: str | None
+
 class SummaryResponse(BaseModel):
     job_id: UUID
-    result: list[ChunkSummaryResult]
+    result: SummaryResult

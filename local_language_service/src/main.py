@@ -3,6 +3,7 @@ from fastapi_utils.tasks import repeat_every
 from faststream.rabbit.fastapi import RabbitRouter, Logger
 from ollama import AsyncClient
 from shared.language import *
+from shared.models import SummaryResult
 from .config import AppConfiguration
 from shared.models import *
 from .services.ollama_language_model import OllamaLanguageModel
@@ -48,6 +49,7 @@ def get_language_service(
         logger=logger,
         model=model,
         summary_system_prompt=AppConfiguration.LANGUAGE_SUMMARY_SYSTEM_PROMPT,
+        overall_summary_system_prompt=AppConfiguration.LANGUAGE_OVERALL_SUMMARY_SYSTEM_PROMPT,
         entity_system_prompt=AppConfiguration.LANGUAGE_ENTITY_SYSTEM_PROMPT,
         empty_chunk_threshold_ms=AppConfiguration.LANGUAGE_EMPTY_CHUNK_THRESHOLD_MS
     )
@@ -99,11 +101,23 @@ async def summarize_local(
     logger.info(f"Handling summary request for {body.video_id}...")
 
     chunks = await language.summarize(body.transcription)
+
+    is_overall_summary_needed = len(chunks) > 1
+    logger.info(f"Summarized chunks of video {body.video_id}. Overall summary needed: {is_overall_summary_needed}")
+
+    overall_summary: str | None = None
+    if is_overall_summary_needed:
+        overall_summary = await language.generate_overall_summary(chunks)
+        logger.info(f"Generated overall summary of video {body.video_id}")
+
     logger.info(f"Summarized video {body.video_id}")
 
     response=SummaryResponse(
         job_id = body.job_id,
-        result = convert_to_chunk_results(chunks)
+        result = SummaryResult(
+            chunks=convert_to_chunk_results(chunks),
+            overall_summary = overall_summary
+        )
     )
 
     await broker.publish(response, queue="summary.result")

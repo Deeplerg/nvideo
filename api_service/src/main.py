@@ -437,7 +437,7 @@ async def handle_summary_result(
     artifact = JobArtifact(
         job_id = job_id,
         type = "summary",
-        content = [chunk.model_dump() for chunk in body.result]
+        content = body.result.model_dump()
     )
     session.add(artifact)
 

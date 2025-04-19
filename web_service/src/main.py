@@ -12,6 +12,7 @@ from pydantic import ValidationError
 from starlette.datastructures import URL
 from starlette.staticfiles import StaticFiles
 from shared.models import *
+from shared.models import SummaryResult
 from .config import AppConfiguration
 from .services.graph_service import GraphService
 from . import utils
@@ -505,7 +506,7 @@ async def job_status_page(
 
     processed_artifacts: Dict[str, Any] = {
         "transcription": [],
-        "summary": [],
+        "summary": None,
         "entity_relation": None,
         "graph": None
     }
@@ -525,12 +526,12 @@ async def job_status_page(
                 except ValidationError as e:
                      logger.warning(f"Validation error in transcription artifact {artifact.id}: {e}")
 
-            elif artifact.type == "summary" and isinstance(content, list):
+            elif artifact.type == "summary" and isinstance(content, dict):
                  try:
-                    parsed_chunks = [ChunkSummaryResult(**chunk) for chunk in content]
-                    processed_artifacts["summary"] = parsed_chunks
+                    parsed_result = SummaryResult(**content)
+                    processed_artifacts["summary"] = parsed_result
                     if not processed_artifacts["transcription"]: # Collect times if transcription missing
-                        for chunk in parsed_chunks:
+                        for chunk in parsed_result.chunks:
                             chunk_times.add((chunk.start_time_ms, chunk.end_time_ms))
                     logger.debug(f"Processed summary artifact {artifact.id}")
                  except ValidationError as e:
@@ -563,7 +564,12 @@ async def job_status_page(
             logger.error(f"General error processing artifact {artifact.id} (type: {artifact.type}): {e}", exc_info=True)
 
     sorted_chunk_end_times = sorted([t[1] for t in chunk_times])
-    logger.info(f"Found {len(processed_artifacts['transcription'])} transcription chunks, {len(processed_artifacts['summary'])} summary chunks.")
+
+    transcriptions = len(processed_artifacts['transcription'])
+    summaries = 0
+    if processed_artifacts["summary"] is not None:
+        summaries = len(processed_artifacts["summary"].chunks)
+    logger.info(f"Found {transcriptions} transcription chunks, {summaries} summary chunks.")
     logger.info(f"EntityRelation found: {processed_artifacts['entity_relation'] is not None}, Graph found: {processed_artifacts['graph'] is not None}")
     logger.info(f"Sorted chunk end times for dropdown: {sorted_chunk_end_times}")
 

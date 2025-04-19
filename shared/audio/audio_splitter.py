@@ -4,7 +4,6 @@ import subprocess
 import tempfile
 from collections.abc import Generator
 from dataclasses import dataclass
-from pydub import AudioSegment
 import math
 
 @dataclass

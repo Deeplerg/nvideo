@@ -10,8 +10,11 @@ Analyzes YouTube videos:
 
 As part of the requirements, uses *local* AI models.
 - Whisper for ASR
-- Ollama w/ Qwen 2.5 as the LLM
+- Qwen 2.5 w/ Ollama
 - SentenceTransformers for generating embeddings (mind maps)
+
+External model options have also been added.
+- Gemini 2.0 Flash and Flash Lite
 
 Stack:
 - FastAPI

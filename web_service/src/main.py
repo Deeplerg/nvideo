@@ -1,4 +1,5 @@
 import http
+import os
 import urllib.parse
 from fastapi import FastAPI, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -9,6 +10,7 @@ from uuid import UUID
 from sse_starlette import EventSourceResponse
 from pydantic import ValidationError
 from starlette.datastructures import URL
+from starlette.staticfiles import StaticFiles
 from shared.models import *
 from .config import AppConfiguration
 from .services.graph_service import GraphService
@@ -30,8 +32,14 @@ job_status_subscriptions: dict[UUID, list[asyncio.Queue]] = {}
 app = FastAPI()
 app.include_router(router)
 
-templates = Jinja2Templates(directory="web_service/templates")
+base_directory = "web_service"
+templates_directory = os.path.join(base_directory, "templates")
+static_directory = os.path.join(base_directory, "static")
+
+templates = Jinja2Templates(directory=templates_directory)
 templates.env.globals['utils'] = utils
+
+app.mount("/static", StaticFiles(directory=static_directory), name="static")
 
 
 @router.after_startup

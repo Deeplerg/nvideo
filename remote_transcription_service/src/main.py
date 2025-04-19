@@ -98,7 +98,7 @@ async def transcribe_remote_deepgram(
 
     segment_length_ms = AppConfiguration.TRANSCRIPTION_CHUNK_SECONDS * 1000
 
-    chunks = await asyncio.to_thread(transcription.transcribe, path, segment_length_ms)
+    chunks = await transcription.transcribe(path, segment_length_ms)
     logger.info(f"Transcribed video {body.video_id}")
 
     response=TranscriptionResponse(

@@ -1,3 +1,4 @@
+import asyncio
 import gc
 import torch
 from faster_whisper import WhisperModel
@@ -43,7 +44,11 @@ class FasterWhisperTranscriptionModel(TranscriptionModel):
             torch.cuda.empty_cache()
 
 
-    def transcribe(self, file_path):
+    async def transcribe(self, file_path):
+        return await asyncio.to_thread(self.__transcribe, file_path)
+
+
+    def __transcribe(self, file_path):
         self.ensure_loaded()
 
         segments, info = self.model.transcribe(

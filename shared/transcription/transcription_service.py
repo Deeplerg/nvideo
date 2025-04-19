@@ -7,11 +7,11 @@ class TranscriptionService:
     def __init__(self, model: TranscriptionModel):
         self.model = model
 
-    def transcribe(self, file_path, segment_length_ms) -> list[TranscriptionChunk]:
+    async def transcribe(self, file_path, segment_length_ms) -> list[TranscriptionChunk]:
         transcription_chunks = []
 
-        for audio_chunk in split_audio(file_path, segment_length_ms, use_temp_dir=True):
-            transcription = self.model.transcribe(audio_chunk.chunk_path)
+        async for audio_chunk in split_audio(file_path, segment_length_ms, use_temp_dir=True):
+            transcription = await self.model.transcribe(audio_chunk.chunk_path)
 
             chunk = TranscriptionChunk(
                 text=transcription,

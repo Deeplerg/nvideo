@@ -22,7 +22,7 @@ class DeepgramTranscriptionModel(TranscriptionModel):
     def unload(self):
         pass
 
-    def transcribe(self, file_path):
+    async def transcribe(self, file_path):
         with open(file_path, "rb") as file:
             file_data = file.read()
 
@@ -38,7 +38,7 @@ class DeepgramTranscriptionModel(TranscriptionModel):
         retries = 5
         for i in range(1, retries):
             try:
-                response = self.__client.listen.rest.v("1").transcribe_file(
+                response = await self.__client.listen.asyncrest.v("1").transcribe_file(
                     payload, options, timeout=httpx.Timeout(300, connect=60)
                 )
                 break

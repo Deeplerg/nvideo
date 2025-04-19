@@ -12,5 +12,5 @@ class TranscriptionModel(Protocol):
         raise NotImplementedError
 
     @abstractmethod
-    def transcribe(self, file_path):
+    async def transcribe(self, file_path):
         raise NotImplementedError

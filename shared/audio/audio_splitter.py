@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import subprocess
@@ -5,6 +6,9 @@ import tempfile
 from collections.abc import Generator
 from dataclasses import dataclass
 import math
+
+from typing import AsyncGenerator
+
 
 @dataclass
 class AudioChunk:
@@ -40,7 +44,7 @@ def get_audio_duration_ms(file_path: str) -> float:
     return duration_s * 1000
 
 
-def split_audio(file_path, segment_length_ms=3 * 60 * 1000, use_temp_dir=True) -> Generator[AudioChunk]:
+async def split_audio(file_path, segment_length_ms=3 * 60 * 1000, use_temp_dir=True) -> AsyncGenerator[AudioChunk, None]:
     if not os.path.exists(file_path):
          raise FileNotFoundError(f"Input file not found: {file_path}")
 
@@ -67,7 +71,7 @@ def split_audio(file_path, segment_length_ms=3 * 60 * 1000, use_temp_dir=True) -
         output_pattern
     ]
 
-    subprocess.run(command, check=True, capture_output=True, text=True)
+    await asyncio.to_thread(subprocess.run, command, check=True, capture_output=True, text=True)
 
     num_segments = math.ceil(total_duration_ms / segment_length_ms)
     for i in range(num_segments):

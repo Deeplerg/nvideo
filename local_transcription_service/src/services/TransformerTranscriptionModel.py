@@ -1,3 +1,4 @@
+import asyncio
 import gc
 import torch
 from transformers import AutoProcessor, AutoModelForSpeechSeq2Seq, pipeline, AutomaticSpeechRecognitionPipeline
@@ -57,7 +58,11 @@ class TransformerTranscriptionModel(TranscriptionModel):
             torch.cuda.empty_cache()
 
 
-    def transcribe(self, file_path):
+
+    async def transcribe(self, file_path):
+        return await asyncio.to_thread(self.__transcribe, file_path)
+
+    def __transcribe(self, file_path):
         self.ensure_loaded()
 
         result = self.pipe(file_path)

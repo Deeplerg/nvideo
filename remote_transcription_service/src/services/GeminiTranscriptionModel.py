@@ -24,7 +24,7 @@ class GeminiTranscriptionModel(TranscriptionModel):
     def unload(self):
         pass
 
-    def transcribe(self, file_path):
+    async def transcribe(self, file_path):
         audio = self.__client.files.upload(file=file_path)
         prompt = AppConfiguration.LLM_TRANSCRIPTION_PROMPT
 
@@ -32,7 +32,7 @@ class GeminiTranscriptionModel(TranscriptionModel):
         retries = 5
         for i in range(1, retries):
             try:
-                response = self.__client.models.generate_content(
+                response = await self.__client.aio.models.generate_content(
                     model=self.__model_name,
                     contents=audio,
                     config=GenerateContentConfigDict(

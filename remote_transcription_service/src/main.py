@@ -1,4 +1,5 @@
-﻿import logging
+﻿import asyncio
+import logging
 import os
 from deepgram import DeepgramClient
 from fastapi import FastAPI, Depends
@@ -92,12 +93,12 @@ async def transcribe_remote_deepgram(
 ):
     logger.info(f"Handling transcription request for {body.video_id}...")
 
-    path = download.download_video_by_id(body.video_id)
+    path = await asyncio.to_thread(download.download_video_by_id, body.video_id)
     logger.info(f"Downloaded {body.video_id} to {path}")
 
     segment_length_ms = AppConfiguration.TRANSCRIPTION_CHUNK_SECONDS * 1000
 
-    chunks = transcription.transcribe(path, segment_length_ms)
+    chunks = await asyncio.to_thread(transcription.transcribe, path, segment_length_ms)
     logger.info(f"Transcribed video {body.video_id}")
 
     response=TranscriptionResponse(

@@ -5,7 +5,7 @@ from tempfile import gettempdir
 class DownloadService:
     def download_video_by_id(self, video_id, output_dir=gettempdir()):
         url = f"https://www.youtube.com/watch?v={video_id}"
-        output_path = os.path.join(output_dir, "%(title)s.%(ext)s")
+        output_path = os.path.join(output_dir, f"{video_id}.%(ext)s")
 
         ydl_opts = {
             "format": "bestaudio/best",

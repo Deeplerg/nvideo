@@ -23,15 +23,17 @@ def get_gemini_client() -> genai.Client:
 
     return genai.Client(api_key=AppConfiguration.LANGUAGE_MODEL_PROVIDER_API_KEY)
 
-def get_model() -> LanguageModel:
+def get_model(
+        logger: Logger
+) -> LanguageModel:
     provider = AppConfiguration.LANGUAGE_MODEL_PROVIDER
     match provider:
         case "google":
             client = get_gemini_client()
-            return GeminiLanguageModel(get_language_model_name(), client)
+            return GeminiLanguageModel(get_language_model_name(), client, logger)
         case _:
             client = get_gemini_client()
-            return GeminiLanguageModel(get_language_model_name(), client)
+            return GeminiLanguageModel(get_language_model_name(), client, logger)
 
 def get_language_service(
         logger: Logger,

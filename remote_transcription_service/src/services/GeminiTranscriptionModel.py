@@ -1,7 +1,7 @@
 from logging import Logger
-import httpx
 from google import genai
 from google.genai.types import GenerateContentConfigDict, GenerateContentResponse
+from shared.api_helpers import GeminiHelper
 from ..config import AppConfiguration
 from shared.transcription import TranscriptionModel
 
@@ -14,6 +14,7 @@ class GeminiTranscriptionModel(TranscriptionModel):
         self.__logger = logger
         self.__model_name : str = model_name
         self.__client = client
+        self.__helper = GeminiHelper(logger, client)
 
         if "/" in self.__model_name:
             self.__model_name = self.__model_name.split('/')[-1]
@@ -25,23 +26,13 @@ class GeminiTranscriptionModel(TranscriptionModel):
         pass
 
     async def transcribe(self, file_path):
-        audio = self.__client.files.upload(file=file_path)
+        audio = await self.__client.aio.files.upload(file=file_path)
         prompt = AppConfiguration.LLM_TRANSCRIPTION_PROMPT
+        config = GenerateContentConfigDict(
+            system_instruction=prompt
+        )
 
-        response : GenerateContentResponse | None = None
-        retries = 5
-        for i in range(1, retries):
-            try:
-                response = await self.__client.aio.models.generate_content(
-                    model=self.__model_name,
-                    contents=audio,
-                    config=GenerateContentConfigDict(
-                        system_instruction=prompt
-                    )
-                )
-                break
-            except httpx.ReadTimeout | httpx.ReadError:
-                self.__logger.info(f"Read error. Retrying ({i} out of {retries})")
+        response = await self.__helper.generate_with_retry_and_congestion_backoff(self.__model_name, audio, config)
 
         result = response.text
 

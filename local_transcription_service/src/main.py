@@ -7,8 +7,8 @@ from shared.audio import *
 from shared.transcription import *
 from shared.transcription.utils import convert_to_chunk_results
 from shared.models import *
-from .services.TransformerTranscriptionModel import TransformerTranscriptionModel
-from .services.FasterWhisperTranscriptionModel import FasterWhisperTranscriptionModel
+from .services.transformer_transcription_model import TransformerTranscriptionModel
+from .services.faster_whisper_transcription_model import FasterWhisperTranscriptionModel
 from .config import AppConfiguration
 
 

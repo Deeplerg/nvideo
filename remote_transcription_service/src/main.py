@@ -9,8 +9,8 @@ from shared.audio import *
 from shared.transcription import *
 from shared.models import *
 from shared.transcription.utils import convert_to_chunk_results
-from .services.GeminiTranscriptionModel import GeminiTranscriptionModel
-from .services.DeepgramTranscriptionModel import DeepgramTranscriptionModel
+from .services.gemini_transcription_model import GeminiTranscriptionModel
+from .services.deepgram_transcription_model import DeepgramTranscriptionModel
 from .config import AppConfiguration
 from google import genai
 

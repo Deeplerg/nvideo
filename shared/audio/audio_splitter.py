@@ -75,13 +75,13 @@ async def split_audio(file_path, segment_length_ms=3 * 60 * 1000, use_temp_dir=T
 
     num_segments = math.ceil(total_duration_ms / segment_length_ms)
     for i in range(num_segments):
-         expected_chunk_path = os.path.join(out_dir, f"{filename_without_extension}_part{i:03d}.{out_format}")
+        expected_chunk_path = os.path.join(out_dir, f"{filename_without_extension}_part{i:03d}.{out_format}")
 
-         start_time = i * segment_length_ms
-         end_time = min((i + 1) * segment_length_ms, total_duration_ms)
+        start_time = i * segment_length_ms
+        end_time = min((i + 1) * segment_length_ms, total_duration_ms)
 
-         yield AudioChunk(
-             start_time_ms=int(start_time),
-             end_time_ms=int(round(end_time)),
-             chunk_path=expected_chunk_path
-         )
+        yield AudioChunk(
+            start_time_ms=int(start_time),
+            end_time_ms=int(round(end_time)),
+            chunk_path=expected_chunk_path
+        )

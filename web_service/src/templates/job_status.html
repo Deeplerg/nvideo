@@ -24,6 +24,13 @@
     <progress id="job-progress" class="progress is-small is-primary" max="100" style="display: none;"></progress>
 </div>
 
+<div class="box" {% if job.status == 'completed' %} style="display: none;" {% endif %}>
+    <h2 class="subtitle">
+        Пожалуйста, подождите. Процесс занимает некоторое время.
+        Если статус задания изменится, страница обновится автоматически.
+    </h2>
+</div>
+
 <div id="final-result-section" class="box" {% if job.status !='completed' %}style="display: none;" {% endif %}>
     <h2 class="subtitle">Итоговый результат</h2>
     {% if job.type == 'summary' %}

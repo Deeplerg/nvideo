@@ -98,7 +98,10 @@ async def transcribe_remote_deepgram(
 
     segment_length_ms = AppConfiguration.TRANSCRIPTION_CHUNK_SECONDS * 1000
 
-    chunks = await transcription.transcribe(path, segment_length_ms)
+    chunks = list()
+    async for chunk in transcription.transcribe(path, segment_length_ms):
+        chunks.append(chunk)
+        logger.info(f"Transcribed chunk at {chunk.start_time_ms} of {body.video_id}")
     logger.info(f"Transcribed video {body.video_id}")
 
     response=TranscriptionResponse(

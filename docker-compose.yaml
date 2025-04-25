@@ -157,7 +157,9 @@ services:
     build:
       dockerfile: web_service/Dockerfile
       context: .
-    env_file: .env
+    env_file:
+      - ".env"
+      - ".secret.local.env"
     ports:
       - "8004:8000"
     depends_on:

@@ -1,6 +1,8 @@
 import logging
 import math
+import isodate
 import yt_dlp
+from googleapiclient import discovery
 
 logger = logging.getLogger()
 
@@ -31,7 +33,33 @@ def generate_youtube_link(video_id: str, start_ms: int) -> str:
     start_seconds = math.floor(start_ms / 1000)
     return f"https://www.youtube.com/watch?v={video_id}&t={start_seconds}s"
 
-def get_video_duration_seconds(video_id: str) -> int | None:
+def get_video_duration_google(video_id: str, youtube_api_key: str) -> int | None:
+    youtube = discovery.build(
+        'youtube', 'v3',
+        developerKey=youtube_api_key,
+        cache_discovery=True)
+
+    request = youtube.videos().list(
+        part="contentDetails",
+        id=video_id
+    )
+    response = request.execute()
+
+    if not response or not response.get("items"):
+        logger.warning(f"No items returned for video id {video_id}")
+        return None
+
+    item = response["items"][0]
+    duration_iso = item.get("contentDetails", {}).get("duration")
+
+    if not duration_iso:
+        logger.warning(f"Duration not found for video id {video_id}")
+        return None
+
+    duration_seconds = isodate.parse_duration(duration_iso).total_seconds()
+    return duration_seconds
+
+def get_video_duration_yt_dlp(video_id: str) -> int | None:
     url = f"https://www.youtube.com/watch?v={video_id}"
     ydl_opts = {
         'quiet': True,

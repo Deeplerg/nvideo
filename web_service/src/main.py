@@ -463,13 +463,14 @@ async def create_job(
         logger.info(f"Checking duration for video id {video_id}")
         duration_seconds: int | None = None
         try:
-            duration_seconds = await asyncio.to_thread(utils.get_video_duration_seconds, video_id)
+            duration_seconds = await asyncio.to_thread(
+                utils.get_video_duration_google, video_id, AppConfiguration.YOUTUBE_API_KEY)
         except Exception as e:
             logger.exception(e)
 
         if duration_seconds is None:
             # don't lock users out until the system is known to be reliable
-            # error = f"Не удалось определить длительность видео '{video_id}'. Видео недоступно или произошла ошибка."
+            error = f"Не удалось определить длительность видео '{video_id}'. Видео недоступно или произошла ошибка."
             logger.warning(f"Failed to determine video duration for {video_id}")
         elif config.MAX_VIDEO_DURATION_SECONDS > 0 and duration_seconds > config.MAX_VIDEO_DURATION_SECONDS:
             error = (

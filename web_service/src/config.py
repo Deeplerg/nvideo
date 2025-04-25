@@ -16,3 +16,4 @@ class AppConfiguration:
     API_URL: str = urllib.parse.urljoin(__API_BASE, __API_PATH)
     GRAFANA_DASHBOARD_URL: str | None = os.getenv("WEB_GRAFANA_DASHBOARD_URL")
     MAX_VIDEO_DURATION_SECONDS: int = int(os.getenv("WEB_MAX_VIDEO_DURATION_SECONDS", "3600"))
+    YOUTUBE_API_KEY: str | None = os.getenv("WEB_YOUTUBE_API_KEY")

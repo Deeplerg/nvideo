@@ -63,10 +63,20 @@ class GeminiHelper:
                 response = await self.generate(model_name, contents, config)
                 break
             except ClientError as e:
-                if e.code != 429:
+                # treat 499 "canceled" the same as 429 "resource exhausted".
+                # 499 likely means there's a problem on Google's side:
+                # https://discuss.ai.google.dev/t/anyone-experiencing-google-api-core-exceptions-cancelled-499-the-operation-was-cancelled/80743
+                if e.code != 429 and e.code != 499:
                     raise
                 last_exception = e
-                self.__logger.info(f"Resource exhaustion error. Retrying in {sleep_seconds} ({i} out of {retries})")
+
+                error_type = "Client error"
+                if e.code == 429:
+                    error_type = "Resource exhaustion error"
+                elif e.code == 499:
+                    error_type = "Request canceled"
+
+                self.__logger.info(f"{error_type}. Retrying in {sleep_seconds} ({i} out of {retries})")
                 await asyncio.sleep(sleep_seconds)
 
         if response is None and last_exception is not None:

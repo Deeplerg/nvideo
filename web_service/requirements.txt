@@ -6,3 +6,4 @@ python-dotenv>=1.0.1
 sse-starlette>=0.10.0
 plotly>=6.0.1
 networkx>=3.4.2
+yt-dlp>=2025.2.19

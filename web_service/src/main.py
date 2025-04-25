@@ -459,6 +459,26 @@ async def create_job(
     else:
         error = "Неизвестный тип задания."
 
+    if error is None:
+        logger.info(f"Checking duration for video id {video_id}")
+        duration_seconds: int | None = None
+        try:
+            duration_seconds = await asyncio.to_thread(utils.get_video_duration_seconds, video_id)
+        except Exception as e:
+            logger.exception(e)
+
+        if duration_seconds is None:
+            # don't lock users out until the system is known to be reliable
+            # error = f"Не удалось определить длительность видео '{video_id}'. Видео недоступно или произошла ошибка."
+            logger.warning(f"Failed to determine video duration for {video_id}")
+        elif config.MAX_VIDEO_DURATION_SECONDS > 0 and duration_seconds > config.MAX_VIDEO_DURATION_SECONDS:
+            error = (
+                f"Видео слишком длинное ({utils.format_ms_to_hours_minutes_seconds(duration_seconds * 1000)}). "
+                f"Максимальная разрешенная длительность: {utils.format_ms_to_hours_minutes_seconds(config.MAX_VIDEO_DURATION_SECONDS * 1000)}."
+            )
+            logger.info(
+                f"Video {video_id} rejected, duration {duration_seconds}s > limit {config.MAX_VIDEO_DURATION_SECONDS}s")
+
     if error:
         available_models = await fetch_available_models()
         model_map = {"transcription": [], "summary": [], "graph": [], "entity-relation": []}

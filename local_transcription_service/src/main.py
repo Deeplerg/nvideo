@@ -60,12 +60,9 @@ async def startup(app: FastAPI):
 
 @repeat_every(seconds=10)
 async def publish_available_models():
-    models = [ transcription_model_full_name ]
-
-    for model in models:
-        await broker.publish(ModelAvailable(
-            model_name=model
-        ), queue="model.available")
+    await broker.publish(ModelAvailable(
+        model_name=transcription_model_full_name
+    ), queue="model.available")
 
 @router.subscriber(transcription_model_full_name)
 async def transcribe_local_whisper(

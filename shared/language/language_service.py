@@ -1,5 +1,6 @@
 import json
 from dataclasses import dataclass
+from json import JSONDecodeError
 from logging import Logger
 from .entity_relations import EntityRelations, Entity, Relationship, EntityRelationsSchema
 from .language_model import LanguageModel, TextMessage
@@ -167,7 +168,11 @@ class LanguageService:
 
         self.__logger.info(response)
 
-        result: dict = json.loads(response)
+        try:
+            result: dict = json.loads(response)
+        except JSONDecodeError:
+            self.__logger.warning(f"JSON decode failed for chunk at {chunk.start_time_ms}. Falling back to empty result")
+            result = dict()
 
         entities = [
             Entity(

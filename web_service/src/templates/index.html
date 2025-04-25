@@ -79,10 +79,12 @@
                 <input id="video-id-input" class="input" type="text" name="video_id" placeholder="Пример: dQw4w9WgXcQ"
                        required>
             </div>
-            <p id="video-id-error" class="help" data-default-help="Введите только ID видео, например, 'dQw4w9WgXcQ' из ссылки
-            'https://www.youtube.com/watch?v=dQw4w9WgXcQ' или YouTube Shorts 'https://youtube.com/shorts/dQw4w9WgXcQ'.">
-                Введите только ID видео, например, 'dQw4w9WgXcQ' из ссылки
-                'https://www.youtube.com/watch?v=dQw4w9WgXcQ'.</p>
+            <p id="video-id-error" class="help"
+                data-default-help='Введите только ID видео, например, "dQw4w9WgXcQ" из ссылки
+                "https://www.youtube.com/watch?v=dQw4w9WgXcQ", <u>либо вставьте ссылку и нажмите Enter.</u>'>
+                Введите только ID видео, например, "dQw4w9WgXcQ" из ссылки
+                "https://www.youtube.com/watch?v=dQw4w9WgXcQ", <u>либо вставьте ссылку и нажмите Enter.</u>
+            </p>
         </div>
 
         <!-- Model Selection Sections -->
@@ -178,31 +180,42 @@
         const defaultHelpText = videoIdError.dataset.defaultHelp;
 
         function resetVideoIdErrorToDefault() {
-            videoIdError.textContent = defaultHelpText;
+            videoIdError.innerHTML = defaultHelpText;
             videoIdError.classList.remove('is-danger');
             videoIdError.classList.add('help');
         }
 
-        function validateYouTubeUrl(url) {
-            url = url.trim();
+        function extractYouTubeId(input) {
+            input = input.trim();
 
-            if (url.length === 11 && !/[^a-zA-Z0-9_-]/.test(url)) {
-                return url;
+            const idRegex = /^[a-zA-Z0-9_-]{11}$/;
+            if (idRegex.test(input)) {
+                return input;
             }
 
-            if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                url = 'https://' + url;
+
+            let inputWithProtocol = input;
+            if (!input.startsWith('http://') && !input.startsWith('https://')) {
+                inputWithProtocol = 'https://' + inputWithProtocol;
             }
 
-            try {
-                const regExp = /^(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([^#\&\?]{11})(?:[^\#\&\?]*)?$/;
-                const match = url.match(regExp);
+            const url = new URL(inputWithProtocol);
+            let videoId = null;
 
-                if (match && match[1]) {
-                    return match[1];
+            if (url.hostname.endsWith('youtube.com')) {
+                if (url.pathname === '/watch') {
+                    videoId = url.searchParams.get('v');
+                } else if (url.pathname.startsWith('/embed/')) {
+                    videoId = url.pathname.substring('/embed/'.length).split('/')[0];
+                } else if (url.pathname.startsWith('/shorts/')) {
+                    videoId = url.pathname.substring('/shorts/'.length).split('/')[0];
                 }
-            } catch (e) {
-                return null;
+            } else if (url.hostname === 'youtu.be') {
+                videoId = url.pathname.substring(1).split('/')[0];
+            }
+
+            if (videoId && idRegex.test(videoId)) {
+                return videoId;
             }
 
             return null;
@@ -217,13 +230,11 @@
                 return;
             }
 
-            const videoId = validateYouTubeUrl(inputValue);
+            const videoId = extractYouTubeId(inputValue);
 
             if (videoId) {
                 if (inputValue.length > 11 || inputValue.includes('/')) {
                     videoIdError.textContent = "Нажмите Enter или Tab для подтверждения URL";
-                    videoIdError.classList.remove('help');
-                    videoIdError.classList.add('is-info');
                 } else {
                     resetVideoIdErrorToDefault();
                     createJobButton.disabled = false;
@@ -246,7 +257,7 @@
 
         function confirmUrl() {
             const inputValue = videoIdInput.value.trim();
-            const videoId = validateYouTubeUrl(inputValue);
+            const videoId = extractYouTubeId(inputValue);
 
             if (videoId) {
                 if (inputValue.length > 11 || inputValue.includes('/')) {

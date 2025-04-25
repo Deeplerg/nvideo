@@ -157,20 +157,32 @@ class LanguageService:
         existing_entity_relations_prompt = f"[Existing entities and relations]\n{existing_entity_relations_json}"
         transcript_prompt = f"[Chunk {start_minutes_seconds} - {end_minutes_seconds}]\n{chunk.text}"
 
-        response: str = await self.__model.chat(
-            messages=[
-                TextMessage(existing_entity_relations_prompt),
-                TextMessage(transcript_prompt)
-            ],
-            system_prompt=self.__entity_system_prompt,
-            schema=EntityRelationsSchema
-        )
+        retries = 5
+        last_exception : Exception | None = None
+        result : dict | None = None
 
-        self.__logger.info(response)
+        for i in range(1, retries+1):
+            try:
+                response: str = await self.__model.chat(
+                    messages=[
+                        TextMessage(existing_entity_relations_prompt),
+                        TextMessage(transcript_prompt)
+                    ],
+                    system_prompt=self.__entity_system_prompt,
+                    schema=EntityRelationsSchema
+                )
 
-        try:
-            result: dict = json.loads(response)
-        except JSONDecodeError:
+                self.__logger.info(response)
+
+                result: dict = json.loads(response)
+
+                break
+            except JSONDecodeError as e:
+                last_exception = e
+                self.__logger.warning(
+                    f"JSON decode failed for chunk at {chunk.start_time_ms}. Retrying ({i} out of {retries})")
+
+        if result is None and last_exception is not None:
             self.__logger.warning(f"JSON decode failed for chunk at {chunk.start_time_ms}. Falling back to empty result")
             result = dict()
 

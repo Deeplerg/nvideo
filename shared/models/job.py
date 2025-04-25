@@ -25,3 +25,6 @@ class JobStatusUpdated(BaseModel):
     video_id: str
     status: str
     user_id: int
+
+class JobFailed(BaseModel):
+    id: UUID

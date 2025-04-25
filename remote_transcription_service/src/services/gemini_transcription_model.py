@@ -1,7 +1,7 @@
 from logging import Logger
 from google import genai
 from google.genai.types import GenerateContentConfigDict, GenerateContentResponse
-from shared.api_helpers import GeminiHelper
+from shared.api_helpers.gemini import GeminiHelper
 from ..config import AppConfiguration
 from shared.transcription import TranscriptionModel
 

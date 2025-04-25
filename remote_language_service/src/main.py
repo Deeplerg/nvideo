@@ -6,6 +6,7 @@ from shared.language import *
 from shared.models import SummaryResult
 from .config import AppConfiguration
 from shared.models import *
+from shared.api_helpers.decorators import fail_job_on_exception
 from .services.gemini_language_model import GeminiLanguageModel
 
 router = RabbitRouter(AppConfiguration.AMQP_URL, fail_fast=False)
@@ -87,6 +88,7 @@ def convert_to_chunk_results(chunks: list[ChunkSummaryResponse]) -> list[ChunkSu
     ]
 
 @router.subscriber(get_summary_model_name())
+@fail_job_on_exception(broker=broker)
 async def summarize_local(
         body : SummaryRequest,
         logger: Logger,
@@ -117,6 +119,7 @@ async def summarize_local(
     await broker.publish(response, queue="summary.result")
 
 @router.subscriber(get_entity_relation_model_name())
+@fail_job_on_exception(broker=broker)
 async def entity_local(
         body : EntityRelationRequest,
         logger: Logger,

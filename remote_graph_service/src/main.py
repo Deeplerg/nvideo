@@ -7,6 +7,7 @@ from google import genai
 from .config import AppConfiguration
 from shared.models import *
 from shared.graph import *
+from shared.api_helpers.decorators import fail_job_on_exception
 from .services.gemini_embedding_model import GeminiEmbeddingModel
 
 embed_model = AppConfiguration.GRAPH_EMBED_MODEL
@@ -99,6 +100,7 @@ async def publish_available_models():
         ), queue="model.available")
 
 @router.subscriber(embed_model_full_name)
+@fail_job_on_exception(broker=broker)
 async def graph_local(
         body : GraphRequest,
         logger: Logger,

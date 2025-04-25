@@ -21,7 +21,7 @@ __all__ = [
     'GraphResult', 'GraphNodeResult', 'GraphRelationResult', 'GraphRequest', 'GraphResponse',
 
     #job
-    'CreateJobRequest', 'JobCompleted', 'JobResponse', 'JobStatusUpdated',
+    'CreateJobRequest', 'JobCompleted', 'JobResponse', 'JobStatusUpdated', 'JobFailed',
 
     #summary
     'SummaryRequest', 'SummaryResponse', 'ChunkSummaryResult',

@@ -2,7 +2,7 @@ from logging import Logger
 from google import genai
 from google.genai.types import GenerateContentConfigDict
 from pydantic import BaseModel
-from shared.api_helpers import GeminiHelper
+from shared.api_helpers.gemini import GeminiHelper
 from shared.language.language_model import LanguageModel, TextMessage, FileMessage
 
 

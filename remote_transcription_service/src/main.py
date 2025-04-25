@@ -9,6 +9,7 @@ from shared.audio import *
 from shared.transcription import *
 from shared.models import *
 from shared.transcription.utils import convert_to_chunk_results
+from shared.api_helpers.decorators import fail_job_on_exception
 from .services.gemini_transcription_model import GeminiTranscriptionModel
 from .services.deepgram_transcription_model import DeepgramTranscriptionModel
 from .config import AppConfiguration
@@ -85,7 +86,8 @@ async def publish_available_models():
     ), queue="model.available")
 
 @router.subscriber(transcription_model_full_name)
-async def transcribe_remote_deepgram(
+@fail_job_on_exception(broker=broker)
+async def transcribe_remote(
         body: TranscriptionRequest,
         logger: Logger,
         download: DownloadService = Depends(get_download_service),

@@ -9,6 +9,7 @@ from shared.transcription.utils import convert_to_chunk_results
 from shared.models import *
 from .services.transformer_transcription_model import TransformerTranscriptionModel
 from .services.faster_whisper_transcription_model import FasterWhisperTranscriptionModel
+from shared.api_helpers.decorators import fail_job_on_exception
 from .config import AppConfiguration
 
 
@@ -65,6 +66,7 @@ async def publish_available_models():
     ), queue="model.available")
 
 @router.subscriber(transcription_model_full_name)
+@fail_job_on_exception(broker=broker)
 async def transcribe_local_whisper(
         body: TranscriptionRequest,
         logger: Logger,

@@ -559,3 +559,29 @@ async def handle_graph_result(
 async def handle_job_completed(
         body: JobCompleted):
   TASKS_COMPLETED_COUNTER.labels(job_type=body.type).inc()
+
+@router.subscriber("job.failed")
+async def handle_summary_result(
+        body: JobFailed,
+        logger: Logger,
+        session: Annotated[Session, Depends(get_session)]
+):
+    job_id = body.id
+
+    job = session.get(Job, job_id)
+
+    if not job:
+        logger.error(f"Job {job_id} has failed but was not found in database")
+        return
+
+    logger.warning(f"Job {job_id} has failed at stage '{job.status}'. Video id: {job.video_id}, type: {job.type}")
+
+    job.status = "failed"
+    session.add(job)
+
+    session.commit()
+    session.refresh(job)
+
+    logger.info(f"Updated job {job_id} status to {job.status}")
+
+    await publish_job_updated(job)

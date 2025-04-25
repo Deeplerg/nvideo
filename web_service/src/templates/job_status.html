@@ -24,10 +24,16 @@
     <progress id="job-progress" class="progress is-small is-primary" max="100" style="display: none;"></progress>
 </div>
 
-<div class="box" {% if job.status == 'completed' %} style="display: none;" {% endif %}>
+<div id="wait-section" class="box" {% if job.status == 'completed' or job.status == 'failed' %} style="display: none;" {% endif %}>
     <h2 class="subtitle">
         Пожалуйста, подождите. Процесс занимает некоторое время.
         Если статус задания изменится, страница обновится автоматически.
+    </h2>
+</div>
+
+<div id="error-occurred-section" class="box" {% if job.status != 'failed' %} style="display: none;" {% endif %}>
+    <h2 class="subtitle">
+        <b class="has-text-danger">При обработке задачи произошла ошибка.</b> Попробуйте создать задание заново.
     </h2>
 </div>
 
@@ -300,8 +306,14 @@
             } else {
                 finalResultSection.style.display = 'none';
             }
-            const intermediateStatuses = ['transcription_finished', 'summary_finished', 'entity-relation_finished', 'completed'];
-            if (intermediateStatuses.includes(status) && status !== initialStatus) {
+            const reloadStatuses = [
+                'transcription_finished',
+                'summary_finished',
+                'entity-relation_finished',
+                'completed',
+                'failed'
+            ];
+            if (reloadStatuses.includes(status) && status !== initialStatus) {
                 if (!window.reloadPending) {
                     window.reloadPending = true;
                     setTimeout(() => {
@@ -364,13 +376,18 @@
             if (status in stages) {
                 value = stages[status];
             }
-            if (status === 'completed' || status === 'failed') {
-                progressBar.setAttribute('value', '100');
+            if (status === 'failed' && progressBar.getAttribute('value')) {
+                // keep current progressBar value to let the user how far along it failed
             } else {
                 progressBar.removeAttribute('value');
                 if (value > 0) {
                     progressBar.setAttribute('value', value.toString());
                 }
+            }
+
+            if(status === 'failed') {
+                progressBar.classList.remove('is-primary')
+                progressBar.classList.add('is-danger')
             }
         }
 

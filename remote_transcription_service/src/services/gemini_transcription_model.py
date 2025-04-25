@@ -36,4 +36,9 @@ class GeminiTranscriptionModel(TranscriptionModel):
 
         result = response.text
 
+        try:
+            await self.__client.aio.files.delete(name=audio.name)
+        except Exception:
+            self.__logger.warning(f"Failed to clean up file.", exc_info=True)
+
         return result

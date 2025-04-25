@@ -1,6 +1,6 @@
 from logging import Logger
 from google import genai
-from google.genai.types import GenerateContentConfigDict
+from google.genai.types import GenerateContentConfigDict, File
 from pydantic import BaseModel
 from shared.api_helpers.gemini import GeminiHelper
 from shared.language.language_model import LanguageModel, TextMessage, FileMessage
@@ -25,6 +25,7 @@ class GeminiLanguageModel(LanguageModel):
             schema: type[BaseModel] | None = None
     ) -> str:
         contents = []
+        uploaded_file : File | None = None
         for message in messages:
             if isinstance(message, TextMessage):
                 contents.append(message.text)
@@ -53,5 +54,11 @@ class GeminiLanguageModel(LanguageModel):
             contents=contents,
             config=config
         )
+
+        try:
+            if uploaded_file is not None:
+                await self.__client.aio.files.delete(name=uploaded_file.name)
+        except Exception:
+            self.__logger.warning(f"Failed to clean up file.", exc_info=True)
 
         return response.text

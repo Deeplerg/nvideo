@@ -22,3 +22,5 @@ Stack:
 - Postgres
 
 Docker Compose for local development, Kubernetes for production. Drone CI, Argo CD.
+
+Infrastructure repo: https://github.com/Deeplerg/nvideo-infra

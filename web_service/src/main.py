@@ -329,7 +329,7 @@ async def index(
         message: str | None = None,
         error: str | None = None):
     available_models = await fetch_available_models()
-    model_map = {"transcription": [], "summary": [], "graph": [], "entity-relation": []}
+    model_map = {"transcription": [], "summary": [], "graph": [], "entity-relation": [], "topics": [], "post": []}
     for model in available_models:
         parts = model.name.split('.', 1)
         if len(parts) == 2:
@@ -434,6 +434,8 @@ async def create_job(
     summary_model: Annotated[str | None, Form()] = None,
     entity_relation_model: Annotated[str | None, Form()] = None,
     graph_model: Annotated[str | None, Form()] = None,
+    topics_model: Annotated[str | None, Form()] = None,
+    post_model: Annotated[str | None, Form()] = None,
 ):
     action_models = []
     error = None
@@ -453,6 +455,13 @@ async def create_job(
         else: error = "Необходимо выбрать модель извлечения сущностей (entity-relation)."
         if graph_model: action_models.append(graph_model)
         else: error = "Необходимо выбрать модель построения графа."
+    elif job_type == "topics":
+        if transcription_model: action_models.append(transcription_model)
+        else: error = "Необходимо выбрать модель транскрипции."
+        if topics_model: action_models.append(topics_model)
+        else: error = "Необходимо выбрать модель извлечения тем."
+        if post_model: action_models.append(post_model)
+        else: error = "Необходимо выбрать модель генерации постов."
     else:
         error = "Неизвестный тип задания."
 
@@ -479,7 +488,7 @@ async def create_job(
 
     if error:
         available_models = await fetch_available_models()
-        model_map = {"transcription": [], "summary": [], "graph": [], "entity-relation": []}
+        model_map = {"transcription": [], "summary": [], "graph": [], "entity-relation": [], "topics": [], "post": []}
         for model in available_models:
             parts = model.name.split('.', 1)
             if len(parts) == 2:
@@ -496,7 +505,7 @@ async def create_job(
     except HTTPException as e:
         error = f"Не удалось создать задание: {e.detail}"
         available_models = await fetch_available_models()
-        model_map = {"transcription": [], "summary": [], "graph": [], "entity-relation": []}
+        model_map = {"transcription": [], "summary": [], "graph": [], "entity-relation": [], "topics": [], "post": []}
         for model in available_models:
              parts = model.name.split('.', 1)
              if len(parts) == 2:
@@ -525,7 +534,8 @@ async def job_status_page(
         "transcription": [],
         "summary": None,
         "entity_relation": None,
-        "graph": None
+        "graph": None,
+        "topics": None
     }
     chunk_times: Set[Tuple[int, int]] = set()
 
@@ -577,6 +587,17 @@ async def job_status_page(
                  except ValidationError as e:
                      base_logger.warning(f"Validation Error parsing graph artifact {artifact.id} content: {e}")
 
+            elif artifact.type == "topics" and isinstance(content, dict):
+                try:
+                    parsed_topics = TopicsExtractionResult(**content)
+                    processed_artifacts["topics"] = parsed_topics
+                    if not processed_artifacts["transcription"] and not processed_artifacts["summary"]:
+                        for t in parsed_topics.topics:
+                            chunk_times.add((t.start_time_ms, t.end_time_ms))
+                    base_logger.debug(f"Processed topics artifact {artifact.id}")
+                except ValidationError as e:
+                    base_logger.warning(f"Validation Error parsing topics artifact: {e}")
+
         except Exception as e:
             base_logger.error(f"General error processing artifact {artifact.id} (type: {artifact.type}): {e}", exc_info=True)
 
@@ -598,6 +619,18 @@ async def job_status_page(
         "sorted_chunk_end_times": sorted_chunk_end_times,
     }
     return templates.TemplateResponse(request=request, name="job_status.html", context=context)
+
+@app.post("/job/{job_id}/generate_post")
+async def generate_post(job_id: UUID, req: GeneratePostRequest):
+    try:
+        response = await make_api_request(
+            f"/jobs/{job_id}/generate_post",
+            method="POST",
+            json_data=req.model_dump(mode="json")
+        )
+        return response
+    except HTTPException as e:
+        raise e
 
 
 @app.get("/admin", response_class=HTMLResponse)

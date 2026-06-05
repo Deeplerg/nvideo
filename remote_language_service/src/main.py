@@ -66,6 +66,10 @@ def get_language_service(
         summary_system_prompt=AppConfiguration.LANGUAGE_SUMMARY_SYSTEM_PROMPT,
         overall_summary_system_prompt=AppConfiguration.LANGUAGE_OVERALL_SUMMARY_SYSTEM_PROMPT,
         entity_system_prompt=AppConfiguration.LANGUAGE_ENTITY_SYSTEM_PROMPT,
+        topic_extraction_system_prompt=AppConfiguration.LANGUAGE_TOPIC_EXTRACTION_SYSTEM_PROMPT,
+        tag_normalization_system_prompt=AppConfiguration.LANGUAGE_TAG_NORMALIZATION_SYSTEM_PROMPT,
+        social_post_system_prompt=AppConfiguration.LANGUAGE_SOCIAL_POST_SYSTEM_PROMPT,
+        tiktok_scenario_system_prompt=AppConfiguration.LANGUAGE_TIKTOK_SCENARIO_SYSTEM_PROMPT,
         empty_chunk_threshold_ms=AppConfiguration.LANGUAGE_EMPTY_CHUNK_THRESHOLD_MS
     )
 
@@ -78,6 +82,11 @@ def get_summary_model_name() -> str:
 def get_entity_relation_model_name() -> str:
     return f"entity-relation.remote-{AppConfiguration.LANGUAGE_MODEL_PROVIDER}-{AppConfiguration.LANGUAGE_MODEL}"
 
+def get_topics_model_name() -> str:
+    return f"topics.remote-{AppConfiguration.LANGUAGE_MODEL_PROVIDER}-{AppConfiguration.LANGUAGE_MODEL}"
+
+def get_post_model_name() -> str:
+    return f"post.remote-{AppConfiguration.LANGUAGE_MODEL_PROVIDER}-{AppConfiguration.LANGUAGE_MODEL}"
 
 @router.after_startup
 async def startup(app: FastAPI):
@@ -89,7 +98,9 @@ async def startup(app: FastAPI):
 async def publish_available_models():
     models = [
         get_summary_model_name(),
-        get_entity_relation_model_name()
+        get_entity_relation_model_name(),
+        get_topics_model_name(),
+        get_post_model_name()
     ]
 
     for model in models:
@@ -158,3 +169,45 @@ async def entity_local(
     )
 
     await broker.publish(response, queue="entity-relation.result")
+
+
+@router.subscriber(get_topics_model_name())
+@fail_job_on_exception(broker=broker)
+async def extract_topics_remote(
+        body: TopicsRequest,
+        logger: Logger,
+        language: LanguageService = Depends(get_language_service)
+):
+    logger.info(f"Handling topic extraction request for {body.video_id}...")
+
+    topics = await language.extract_topics(body.transcription)
+    logger.info(f"Extracted {len(topics)} topics for video {body.video_id}")
+
+    all_tags = []
+    for topic in topics:
+        all_tags.extend(topic.tags)
+
+    macro_mapping = await language.normalize_tags(all_tags)
+    logger.info(f"Normalized tags into {len(set(macro_mapping.values()))} macro-categories")
+
+    response = TopicsResponse(
+        job_id=body.job_id,
+        result=TopicsExtractionResult(
+            topics=topics,
+            macro_tags_mapping=macro_mapping
+        )
+    )
+
+    await broker.publish(response, queue="topics.result")
+
+
+@router.subscriber(get_post_model_name())
+async def generate_post_rpc(
+        body: GeneratePostRpcRequest,
+        logger: Logger,
+        language: LanguageService = Depends(get_language_service)
+):
+    logger.info(f"Handling post generation request for {body.post_type}...")
+
+    post_text = await language.generate_social_post(body.transcript_slice, body.post_type)
+    return post_text

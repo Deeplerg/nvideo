@@ -129,7 +129,7 @@ async def create_job(
     session.refresh(job)
 
     match job.type:
-        case "transcription" | "summary" | "graph":
+        case "transcription" | "summary" | "graph" | "topics":
             transcription_model = find_model_or_raise("transcription", job.action_models)
 
             if job.type != "transcription":
@@ -137,6 +137,9 @@ async def create_job(
 
             if job.type == "graph":
                 find_model_or_raise("entity-relation", job.action_models)
+
+            if job.type == "topics":
+                find_model_or_raise("topics", job.action_models)
 
             await broker.publish(TranscriptionRequest(
                 job_id = job.id,
@@ -315,6 +318,53 @@ async def get_job_artifacts(
     ]
 
 
+@app.post("/jobs/{job_id}/generate_post")
+async def generate_post_on_demand(
+        job_id: UUID,
+        request: GeneratePostRequest,
+        session: Annotated[Session, Depends(get_session)]
+):
+    job = session.get(Job, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    statement = select(JobArtifact).where(JobArtifact.job_id == job_id, JobArtifact.type == "transcription")
+    transcription_artifact = session.exec(statement).first()
+
+    if not transcription_artifact:
+        raise HTTPException(status_code=400, detail="Transcription not found for this job")
+
+    chunks = [TranscriptionChunkResult(**c) for c in transcription_artifact.content]
+
+    slice_texts = []
+    for chunk in chunks:
+        if (chunk.start_time_ms <= request.topic_end_ms
+                and chunk.end_time_ms >= request.topic_start_ms):
+            slice_texts.append(chunk.text)
+
+    transcript_slice = " ".join(slice_texts)
+    if not transcript_slice:
+        raise HTTPException(status_code=400, detail="No transcript found in that time range")
+
+    model = first_specified_model("post", job.action_models)
+    if not model:
+        statement = select(AvailableModel).where(AvailableModel.name.startswith("post."))
+        available = session.exec(statement).first()
+        if not available:
+            raise HTTPException(status_code=503, detail="No post generation models available")
+        model = available.name
+
+    rpc_request = GeneratePostRpcRequest(
+        transcript_slice=transcript_slice,
+        post_type=request.post_type
+    )
+
+    timeout = AppConfiguration.API_GENERATE_POST_TIMEOUT_SECONDS
+    rpc_response = await broker.request(rpc_request, queue=model, timeout=timeout)
+    generated_text = rpc_response.body.decode("utf-8")
+
+    return {"text": generated_text}
+
 @router.subscriber("model.available")
 async def handle_model_available(
         body: ModelAvailable,
@@ -400,6 +450,20 @@ async def handle_transcription_result(
 
             await broker.publish(request, queue=model)
             logger.info(f"Published {model}, job_id: {job.id}")
+
+        case "topics":
+            model = first_specified_model(
+                model_type="topics",
+                action_models=job.action_models)
+
+            request = TopicsRequest(
+                job_id=job.id,
+                video_id=job.video_id,
+                transcription=body.result
+            )
+
+            await broker.publish(request, queue=model)
+            base_logger.info(f"Published {model}, job_id: {job.id}")
 
         case "transcription":
             await broker.publish(JobCompleted(
@@ -552,13 +616,49 @@ async def handle_graph_result(
     logger.info(f"Job {job.id} completed")
 
 
+@router.subscriber("topics.result")
+async def handle_topics_result(
+        body: TopicsResponse,
+        logger: Logger,
+        session: Annotated[Session, Depends(get_session)]
+):
+    job_id = body.job_id
+    logger.info(f"Handling topics result for {job_id}...")
+
+    job = session.get(Job, job_id)
+    if not job:
+        logger.error(f"Job {job_id} not found in database")
+        return
+
+    artifact = JobArtifact(
+        job_id=job_id,
+        type="topics",
+        content=body.result.model_dump()
+    )
+    session.add(artifact)
+
+    job.status = "completed"
+    session.add(job)
+    session.commit()
+
+    logger.info(f"Added topics artifact {artifact.id}")
+    await publish_job_updated(job)
+
+    await broker.publish(JobCompleted(
+        id=job.id,
+        type=job.type,
+        video_id=job.video_id,
+        user_id=job.user_id
+    ), queue="job.completed")
+
+
 @router.subscriber("job.completed")
 async def handle_job_completed(
         body: JobCompleted):
   TASKS_COMPLETED_COUNTER.labels(job_type=body.type).inc()
 
 @router.subscriber("job.failed")
-async def handle_summary_result(
+async def handle_job_failed(
         body: JobFailed,
         logger: Logger,
         session: Annotated[Session, Depends(get_session)]

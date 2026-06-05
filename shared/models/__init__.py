@@ -4,6 +4,7 @@ from .entity_relation import *
 from .graph import *
 from .job import *
 from .summary import *
+from .topics import *
 from .transcription import *
 from .user import *
 
@@ -25,6 +26,10 @@ __all__ = [
 
     #summary
     'SummaryRequest', 'SummaryResponse', 'ChunkSummaryResult',
+
+    #topic
+    'PostType', 'TopicResult', 'TopicsExtractionResult', 'GeneratePostRequest',
+    'TopicsRequest', 'TopicsResponse', 'GeneratePostRpcRequest',
 
     #transcription
     'TranscriptionChunkResult', 'TranscriptionResponse', 'TranscriptionRequest',

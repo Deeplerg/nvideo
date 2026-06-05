@@ -1,6 +1,7 @@
 from .entity_relations import *
 from .language_model import *
 from .language_service import *
+from .topics_schema import *
 
 __all__ = [
     #entity_relations

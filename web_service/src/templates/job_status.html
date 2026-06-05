@@ -114,6 +114,44 @@
         {% else %} <p>Транскрипция еще не завершена.</p> {% endif %}
     </div>
     {% endif %}
+    {% if job.type == 'topics' %}
+    <div id="final-topics-content" class="content">
+        {% if artifacts.topics %}
+            {% for topic in artifacts.topics.topics %}
+                <div class="box mb-4">
+                    <h3 class="title is-4">{{ topic.title }}</h3>
+                    <p>
+                        <strong>Время:</strong>
+                        <a href="{{ utils.generate_youtube_link(job.video_id, topic.start_time_ms) }}" target="_blank">
+                            [{{ utils.format_ms_range(topic.start_time_ms, topic.end_time_ms) }}]
+                        </a>
+                    </p>
+                    <p>
+                        <strong>Виральность:</strong>
+                        <span class="tag is-info">{{ topic.virality_score }}/100</span> - {{ topic.virality_reasoning }}
+                    </p>
+                    <p>
+                        <strong>Теги:</strong>
+                        {% for tag in topic.tags %}
+                            <span class="tag is-light">{{ tag }} ({{ artifacts.topics.macro_tags_mapping.get(tag, tag) }})</span>
+                        {% endfor %}
+                    </p>
+                    <p>{{ topic.summary }}</p>
+
+                    <div class="buttons mt-2">
+                        <button class="button is-small is-primary" onclick="generatePost('{{ job.id }}', {{ topic.start_time_ms }}, {{ topic.end_time_ms }}, 'post')">Написать Telegram/VK пост</button>
+                        <button class="button is-small is-link" onclick="generatePost('{{ job.id }}', {{ topic.start_time_ms }}, {{ topic.end_time_ms }}, 'tiktok_scenario')">Сценарий TikTok/Reels</button>
+                    </div>
+                    <div id="post-result-{{ topic.start_time_ms }}" class="notification is-hidden mt-2" style="white-space: pre-wrap;"></div>
+                </div>
+            {% endfor %}
+        {% elif job.status == 'completed' %}
+            <p>Извлечение тем завершено, но результаты не найдены.</p>
+        {% else %}
+            <p>Анализ тем еще не завершен.</p>
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
 
 <div id="intermediate-artifacts-section" class="box">
@@ -479,6 +517,40 @@
         }
 
         updateUIForStatus(initialStatus);
+
+        window.generatePost = async function(jobId, startMs, endMs, postType) {
+            const resultDiv = document.getElementById(`post-result-${startMs}`);
+            resultDiv.classList.remove('is-hidden', 'is-danger', 'is-success');
+            resultDiv.classList.add('is-info', 'is-light');
+            resultDiv.innerText = "Генерация...";
+
+            try {
+                const response = await fetch(`/job/${jobId}/generate_post`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        topic_start_ms: startMs,
+                        topic_end_ms: endMs,
+                        post_type: postType
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || "Ошибка генерации");
+                }
+
+                resultDiv.classList.remove('is-info');
+                resultDiv.classList.add('is-success');
+                resultDiv.innerText = data.text;
+
+            } catch (err) {
+                resultDiv.classList.remove('is-info', 'is-success');
+                resultDiv.classList.add('is-danger');
+                resultDiv.innerText = err.message;
+            }
+        };
     });
 </script>
 {% endblock %}

@@ -5,6 +5,8 @@ from logging import Logger
 from .entity_relations import EntityRelations, Entity, Relationship, EntityRelationsSchema
 from .language_model import LanguageModel, TextMessage
 from shared.models import *
+from .topics_schema import TopicExtractionSchema, MacroTagMappingSchema
+from shared.models.topics import TopicResult
 
 @dataclass
 class ChunkSummaryResponse:
@@ -20,6 +22,10 @@ class LanguageService:
             summary_system_prompt: str,
             overall_summary_system_prompt: str,
             entity_system_prompt: str,
+            topic_extraction_system_prompt: str,
+            tag_normalization_system_prompt: str,
+            social_post_system_prompt: str,
+            tiktok_scenario_system_prompt: str,
             empty_chunk_threshold_ms: int
     ):
         self.__logger = logger
@@ -27,6 +33,10 @@ class LanguageService:
         self.__summary_system_prompt = summary_system_prompt
         self.__overall_summary_system_prompt = overall_summary_system_prompt
         self.__entity_system_prompt = entity_system_prompt
+        self.__topic_extraction_system_prompt = topic_extraction_system_prompt
+        self.__tag_normalization_system_prompt = tag_normalization_system_prompt
+        self.__social_post_system_prompt = social_post_system_prompt
+        self.__tiktok_scenario_system_prompt = tiktok_scenario_system_prompt
         self.__empty_chunk_threshold_ms = empty_chunk_threshold_ms
 
     async def summarize(self, chunks: list[TranscriptionChunkResult]) -> list[ChunkSummaryResponse]:
@@ -120,6 +130,66 @@ class LanguageService:
 
         return EntityRelations(entities=entities, relationships=relationships)
 
+    async def extract_topics(self, chunks: list[TranscriptionChunkResult]) -> list[TopicResult]:
+        transcript = self.__create_full_transcript_message(chunks)
+
+        response = await self.__model.chat(
+            messages=[TextMessage(transcript)],
+            system_prompt=self.__topic_extraction_system_prompt,
+            schema=TopicExtractionSchema
+        )
+
+        try:
+            result_dict = json.loads(response)
+            topics = [
+                TopicResult(
+                    title=t["title"],
+                    start_time_ms=t["start_time_ms"],
+                    end_time_ms=t["end_time_ms"],
+                    summary=t["summary"],
+                    tags=t["tags"],
+                    virality_score=t["virality_score"],
+                    virality_reasoning=t["virality_reasoning"]
+                ) for t in result_dict.get("topics", [])
+            ]
+            topics_sorted = sorted(topics, key=lambda t: t.virality_score, reverse=True)
+            return topics_sorted
+        except (json.JSONDecodeError, KeyError) as e:
+            self.__logger.error(f"Failed to parse topics JSON: {e}")
+            return []
+
+    async def normalize_tags(self, tags: list[str]) -> dict[str, str]:
+        if not tags:
+            return {}
+
+        tags_str = ", ".join(set(tags))
+
+        response = await self.__model.chat(
+            messages=[TextMessage(tags_str)],
+            system_prompt=self.__tag_normalization_system_prompt,
+            schema=MacroTagMappingSchema
+        )
+
+        try:
+            result_dict = json.loads(response)
+            return result_dict.get("mapping", {})
+        except json.JSONDecodeError as e:
+            self.__logger.error(f"Failed to parse macro tags JSON: {e}")
+            return {}
+
+    async def generate_social_post(self, transcript_slice: str, post_type: PostType) -> str:
+        if post_type == PostType.TIKTOK_SCENARIO:
+            system_prompt = self.__tiktok_scenario_system_prompt
+        else:
+            system_prompt = self.__social_post_system_prompt
+
+        response = await self.__model.chat(
+            messages=[TextMessage(transcript_slice)],
+            system_prompt=system_prompt
+        )
+
+        return response
+
     def __ms_to_minutes_seconds(self, ms) -> str:
         seconds = ms // 1000
         minutes = seconds // 60
@@ -144,6 +214,14 @@ class LanguageService:
 
         return (f"[Chunk {start_minutes_seconds} - {end_minutes_seconds}]"
                 f"\n{text}")
+
+    def __create_full_transcript_message(self, chunks: list[TranscriptionChunkResult]) -> str:
+        text = ""
+        for chunk in chunks:
+            start = self.__ms_to_minutes_seconds(chunk.start_time_ms)
+            end = self.__ms_to_minutes_seconds(chunk.end_time_ms)
+            text += f"[{start} - {end}] (MS: {chunk.start_time_ms} - {chunk.end_time_ms})\n{chunk.text}\n\n"
+        return text
 
     async def __extract_entity_relations_chunk(
             self,

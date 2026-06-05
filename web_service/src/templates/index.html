@@ -68,6 +68,7 @@
                         <option value="transcription">Транскрипция</option>
                         <option value="summary">Суммаризация</option>
                         <option value="graph">Граф сущностей</option>
+                        <option value="topics">Извлечение тем и посты</option>
                     </select>
                 </div>
             </div>
@@ -151,7 +152,38 @@
                 {% endif %}
             </div>
         </div>
-        <!-- End Model Selection -->
+
+        <div class="field model-selection" id="model-selection-topics" style="display:none;">
+            <label class="label">Модель извлечения тем</label>
+            <div class="control">
+                {% if model_map.topics %}
+                {% for model in model_map.topics %}
+                <label class="radio">
+                    <input type="radio" name="topics_model" value="{{ model.value }}">
+                    {{ model.name }}
+                </label><br>
+                {% endfor %}
+                {% else %}
+                <p class="has-text-danger">Нет доступных моделей извлечения тем.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="field model-selection" id="model-selection-post" style="display:none;">
+            <label class="label">Модель генерации постов</label>
+            <div class="control">
+                {% if model_map.post %}
+                {% for model in model_map.post %}
+                <label class="radio">
+                    <input type="radio" name="post_model" value="{{ model.value }}">
+                    {{ model.name }}
+                </label><br>
+                {% endfor %}
+                {% else %}
+                <p class="has-text-danger">Нет доступных моделей генерации постов.</p>
+                {% endif %}
+            </div>
+        </div>
 
         <div class="field">
             <div class="control">
@@ -171,7 +203,9 @@
             transcription: document.getElementById('model-selection-transcription'),
             summary: document.getElementById('model-selection-summary'),
             entityRelation: document.getElementById('model-selection-entity-relation'),
-            graph: document.getElementById('model-selection-graph')
+            graph: document.getElementById('model-selection-graph'),
+            topics: document.getElementById('model-selection-topics'),
+            post: document.getElementById('model-selection-post')
         };
 
         const videoIdInput = document.getElementById('video-id-input');
@@ -273,15 +307,12 @@
         function updateModelSelectionVisibility() {
             const jobType = jobTypeSelect.value;
 
-            // Hide all model sections first
             Object.values(modelSections).forEach(el => {
                 if (el) el.style.display = 'none';
             });
-            // Disable all radio buttons initially
             document.querySelectorAll('.model-selection input[type="radio"]').forEach(radio => radio.disabled = true);
 
 
-            // Show relevant sections and enable radios
             if (jobType === 'transcription') {
                 if (modelSections.transcription) {
                     modelSections.transcription.style.display = 'block';
@@ -301,7 +332,7 @@
                     modelSections.transcription.style.display = 'block';
                     modelSections.transcription.querySelectorAll('input[type="radio"]').forEach(radio => radio.disabled = false);
                 }
-                if (modelSections.entityRelation) { // Require entity relation for graph
+                if (modelSections.entityRelation) {
                     modelSections.entityRelation.style.display = 'block';
                     modelSections.entityRelation.querySelectorAll('input[type="radio"]').forEach(radio => radio.disabled = false);
                 }
@@ -309,12 +340,24 @@
                     modelSections.graph.style.display = 'block';
                     modelSections.graph.querySelectorAll('input[type="radio"]').forEach(radio => radio.disabled = false);
                 }
+            } else if (jobType === 'topics') {
+                if (modelSections.transcription) {
+                    modelSections.transcription.style.display = 'block';
+                    modelSections.transcription.querySelectorAll('input[type="radio"]').forEach(r => r.disabled = false);
+                }
+                if (modelSections.topics) {
+                    modelSections.topics.style.display = 'block';
+                    modelSections.topics.querySelectorAll('input[type="radio"]').forEach(r => r.disabled = false);
+                }
+                if (modelSections.post) {
+                    modelSections.post.style.display = 'block';
+                    modelSections.post.querySelectorAll('input[type="radio"]').forEach(r => r.disabled = false);
+                }
             }
         }
 
         if (jobTypeSelect) {
             jobTypeSelect.addEventListener('change', updateModelSelectionVisibility);
-            // Initial call in case the page loads with a type selected (e.g., after error)
             updateModelSelectionVisibility();
         }
     });

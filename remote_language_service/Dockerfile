@@ -4,8 +4,10 @@ WORKDIR /app
 
 RUN apk add gcc python3-dev musl-dev linux-headers
 
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
 COPY ./remote_language_service/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN uv pip install --system --no-cache -r requirements.txt
 
 COPY ./remote_language_service/src/ ./remote_language_service/
 COPY ./shared/ ./shared/

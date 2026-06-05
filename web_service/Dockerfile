@@ -2,8 +2,10 @@ FROM python:3.13-alpine
 
 WORKDIR /app
 
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
 COPY ./web_service/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN uv pip install --system --no-cache -r requirements.txt
 
 COPY ./web_service/src/ ./web_service/
 COPY ./shared/ ./shared/

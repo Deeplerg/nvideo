@@ -21,22 +21,22 @@ services:
     ports:
       - "5432:5432"
 
-  ollama:
-    image: ollama/ollama:0.6.2
-    env_file: .env
-    volumes:
-      - local-models:/root/.ollama
-    networks:
-      - app-network
-    ports:
-      - "11434:11434"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [ gpu ]
+#  ollama:
+#    image: ollama/ollama:0.6.2
+#    env_file: .env
+#    volumes:
+#      - local-models:/root/.ollama
+#    networks:
+#      - app-network
+#    ports:
+#      - "11434:11434"
+#    deploy:
+#      resources:
+#        reservations:
+#          devices:
+#            - driver: nvidia
+#              count: 1
+#              capabilities: [ gpu ]
 
   api:
     build:
@@ -51,27 +51,27 @@ services:
     networks:
       - app-network
 
-  local-transcription-service:
-    build:
-      dockerfile: local_transcription_service/Dockerfile
-      context: .
-    env_file: .env
-    ports:
-      - "8001:8000"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [ gpu ]
-    depends_on:
-      - rabbitmq
-      - api
-    networks:
-      - app-network
-    volumes:
-      - local-models:/models
+#  local-transcription-service:
+#    build:
+#      dockerfile: local_transcription_service/Dockerfile
+#      context: .
+#    env_file: .env
+#    ports:
+#      - "8001:8000"
+#    deploy:
+#      resources:
+#        reservations:
+#          devices:
+#            - driver: nvidia
+#              count: 1
+#              capabilities: [ gpu ]
+#    depends_on:
+#      - rabbitmq
+#      - api
+#    networks:
+#      - app-network
+#    volumes:
+#      - local-models:/models
 
   remote-transcription-service:
     build:
@@ -118,18 +118,18 @@ services:
     networks:
       - app-network
 
-  local-language-service:
-    build:
-      dockerfile: local_language_service/Dockerfile
-      context: .
-    env_file: .env
-    ports:
-      - "8002:8000"
-    depends_on:
-      - rabbitmq
-      - api
-    networks:
-      - app-network
+#  local-language-service:
+#    build:
+#      dockerfile: local_language_service/Dockerfile
+#      context: .
+#    env_file: .env
+#    ports:
+#      - "8002:8000"
+#    depends_on:
+#      - rabbitmq
+#      - api
+#    networks:
+#      - app-network
 
   local-graph-service:
     build:

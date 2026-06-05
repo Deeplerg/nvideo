@@ -222,7 +222,6 @@ async def delete_user_api(user_id: int):
 
 async def verify_admin_role(
     request: Request,
-    logger: Logger,
     admin_user_id: int | None
 ) -> int:
     error = None
@@ -240,7 +239,7 @@ async def verify_admin_role(
             error = f"Ошибка проверки администратора: {e.detail}"
         except Exception as e:
             error = "Ошибка сервера при проверке администратора."
-            logger.error(f"Unexpected error verifying admin {admin_user_id}", exc_info=True)
+            base_logger.error(f"Unexpected error verifying admin {admin_user_id}", exc_info=True)
 
     if error:
         login_url = request.url_for("admin_login_get")
@@ -266,10 +265,9 @@ def get_graph_service():
 async def get_graph_chunk(
     job_id: UUID,
     chunk_end_ms: int,
-    logger: Logger,
     graph_service: GraphService = Depends(get_graph_service)
 ):
-    logger.info(f"Received request for graph chunk: job={job_id}, time={chunk_end_ms}")
+    base_logger.info(f"Received request for graph chunk: job={job_id}, time={chunk_end_ms}")
     artifacts = await fetch_job_artifacts(job_id)
     graph_data: GraphResult | None = None
     entity_relation_data: EntityRelationResult | None = None
@@ -281,45 +279,45 @@ async def get_graph_chunk(
                  if isinstance(artifact.content, dict):
                     try:
                         graph_data = GraphResult(**artifact.content)
-                        logger.info(f"Successfully parsed graph artifact {artifact.id}")
+                        base_logger.info(f"Successfully parsed graph artifact {artifact.id}")
                     except ValidationError as e:
-                        logger.error(f"Validation Error parsing graph artifact {artifact.id}: {e}")
+                        base_logger.error(f"Validation Error parsing graph artifact {artifact.id}: {e}")
                  else:
-                     logger.warning(f"Graph artifact {artifact.id} content is not a dict: {type(artifact.content)}")
+                     base_logger.warning(f"Graph artifact {artifact.id} content is not a dict: {type(artifact.content)}")
 
             elif artifact.type == "entity-relation":
                  if isinstance(artifact.content, dict):
                     if 'entities' in artifact.content and 'relationships' in artifact.content:
                         try:
                             entity_relation_data = EntityRelationResult(**artifact.content)
-                            logger.info(f"Successfully parsed entity-relation artifact {artifact.id}")
+                            base_logger.info(f"Successfully parsed entity-relation artifact {artifact.id}")
                         except ValidationError as e:
-                            logger.error(f"Validation Error parsing entity-relation artifact {artifact.id}: {e}")
+                            base_logger.error(f"Validation Error parsing entity-relation artifact {artifact.id}: {e}")
                     else:
-                         logger.warning(f"Entity-relation artifact {artifact.id} content missing 'entities' or 'relationships' keys.")
+                         base_logger.warning(f"Entity-relation artifact {artifact.id} content missing 'entities' or 'relationships' keys.")
                  else:
-                      logger.warning(f"Entity-relation artifact {artifact.id} content is not a dict: {type(artifact.content)}")
+                      base_logger.warning(f"Entity-relation artifact {artifact.id} content is not a dict: {type(artifact.content)}")
 
         except Exception as e:
-            logger.error(f"Unexpected error processing artifact {artifact.id} (type: {artifact.type}): {e}", exc_info=True)
+            base_logger.error(f"Unexpected error processing artifact {artifact.id} (type: {artifact.type}): {e}", exc_info=True)
 
 
     if not graph_data:
-        logger.error(f"Graph data not found or failed to parse for job {job_id}.")
+        base_logger.error(f"Graph data not found or failed to parse for job {job_id}.")
         return HTMLResponse("<p>Данные графа не найдены или повреждены.</p>", status_code=404)
     if not entity_relation_data:
-         logger.error(f"Entity-relation data not found or failed to parse for job {job_id}.")
+         base_logger.error(f"Entity-relation data not found or failed to parse for job {job_id}.")
          return HTMLResponse("<p>Данные сущностей/связей не найдены или повреждены.</p>", status_code=404)
 
     try:
-        logger.info("Calling graph_service.create_cumulative_graph_html...")
+        base_logger.info("Calling graph_service.create_cumulative_graph_html...")
         graph_html = graph_service.create_cumulative_graph_html(
             graph_data, entity_relation_data, chunk_end_ms
         )
-        logger.info(f"Graph HTML generation successful for job {job_id}, time {chunk_end_ms}.")
+        base_logger.info(f"Graph HTML generation successful for job {job_id}, time {chunk_end_ms}.")
         return HTMLResponse(content=graph_html)
     except Exception as e:
-        logger.error(f"Ошибка генерации HTML графа для задания {job_id}, интервал {chunk_end_ms}: {e}", exc_info=True)
+        base_logger.error(f"Ошибка генерации HTML графа для задания {job_id}, интервал {chunk_end_ms}: {e}", exc_info=True)
         return HTMLResponse("<p>Ошибка при генерации графа.</p>", status_code=500)
 
 
@@ -429,7 +427,6 @@ async def login_user(request: Request, username: Annotated[str, Form()]):
 @app.post("/create_job", response_class=HTMLResponse)
 async def create_job(
     request: Request,
-    logger: Logger,
     user_id: Annotated[int, Form()],
     job_type: Annotated[str, Form()],
     video_id: Annotated[str, Form()],
@@ -460,24 +457,24 @@ async def create_job(
         error = "Неизвестный тип задания."
 
     if error is None:
-        logger.info(f"Checking duration for video id {video_id}")
+        base_logger.info(f"Checking duration for video id {video_id}")
         duration_seconds: int | None = None
         try:
             duration_seconds = await asyncio.to_thread(
                 utils.get_video_duration_google, video_id, AppConfiguration.YOUTUBE_API_KEY)
         except Exception as e:
-            logger.exception(e)
+            base_logger.exception(e)
 
         if duration_seconds is None:
             # don't lock users out until the system is known to be reliable
             error = f"Не удалось определить длительность видео '{video_id}'. Видео недоступно или произошла ошибка."
-            logger.warning(f"Failed to determine video duration for {video_id}")
+            base_logger.warning(f"Failed to determine video duration for {video_id}")
         elif config.MAX_VIDEO_DURATION_SECONDS > 0 and duration_seconds > config.MAX_VIDEO_DURATION_SECONDS:
             error = (
                 f"Видео слишком длинное ({utils.format_ms_to_hours_minutes_seconds(duration_seconds * 1000)}). "
                 f"Максимальная разрешенная длительность: {utils.format_ms_to_hours_minutes_seconds(config.MAX_VIDEO_DURATION_SECONDS * 1000)}."
             )
-            logger.info(
+            base_logger.info(
                 f"Video {video_id} rejected, duration {duration_seconds}s > limit {config.MAX_VIDEO_DURATION_SECONDS}s")
 
     if error:
@@ -514,8 +511,7 @@ async def create_job(
 @app.get("/job/{job_id}", response_class=HTMLResponse)
 async def job_status_page(
         request: Request,
-        job_id: UUID,
-        logger: Logger):
+        job_id: UUID):
     try:
         job = await fetch_job(job_id)
     except HTTPException as e:
@@ -533,7 +529,7 @@ async def job_status_page(
     }
     chunk_times: Set[Tuple[int, int]] = set()
 
-    logger.info(f"Processing {len(artifacts)} artifacts for job {job_id}")
+    base_logger.info(f"Processing {len(artifacts)} artifacts for job {job_id}")
     for artifact in artifacts:
         try:
             content = artifact.content
@@ -543,9 +539,9 @@ async def job_status_page(
                     processed_artifacts["transcription"] = parsed_chunks
                     for chunk in parsed_chunks:
                         chunk_times.add((chunk.start_time_ms, chunk.end_time_ms))
-                    logger.debug(f"Processed transcription artifact {artifact.id}")
+                    base_logger.debug(f"Processed transcription artifact {artifact.id}")
                 except ValidationError as e:
-                     logger.warning(f"Validation error in transcription artifact {artifact.id}: {e}")
+                     base_logger.warning(f"Validation error in transcription artifact {artifact.id}: {e}")
 
             elif artifact.type == "summary" and isinstance(content, dict):
                  try:
@@ -554,9 +550,9 @@ async def job_status_page(
                     if not processed_artifacts["transcription"]: # Collect times if transcription missing
                         for chunk in parsed_result.chunks:
                             chunk_times.add((chunk.start_time_ms, chunk.end_time_ms))
-                    logger.debug(f"Processed summary artifact {artifact.id}")
+                    base_logger.debug(f"Processed summary artifact {artifact.id}")
                  except ValidationError as e:
-                     logger.warning(f"Validation error in summary artifact {artifact.id}: {e}")
+                     base_logger.warning(f"Validation error in summary artifact {artifact.id}: {e}")
 
             elif artifact.type == "entity-relation" and isinstance(content, dict):
                 if 'entities' in content and 'relationships' in content:
@@ -568,21 +564,21 @@ async def job_status_page(
                                  chunk_times.add((entity.chunk_start_time_ms, entity.chunk_end_time_ms))
                              for rel in parsed_er.relationships:
                                  chunk_times.add((rel.chunk_start_time_ms, rel.chunk_end_time_ms))
-                        logger.debug(f"Processed entity-relation artifact {artifact.id}")
+                        base_logger.debug(f"Processed entity-relation artifact {artifact.id}")
                     except ValidationError as e:
-                         logger.warning(f"Validation Error parsing entity-relation artifact {artifact.id} content: {e}")
+                         base_logger.warning(f"Validation Error parsing entity-relation artifact {artifact.id} content: {e}")
                 else:
-                     logger.warning(f"Entity-relation artifact {artifact.id} content missing expected keys.")
+                     base_logger.warning(f"Entity-relation artifact {artifact.id} content missing expected keys.")
 
             elif artifact.type == "graph" and isinstance(content, dict):
                  try:
                     processed_artifacts["graph"] = GraphResult(**content)
-                    logger.debug(f"Processed graph artifact {artifact.id}")
+                    base_logger.debug(f"Processed graph artifact {artifact.id}")
                  except ValidationError as e:
-                     logger.warning(f"Validation Error parsing graph artifact {artifact.id} content: {e}")
+                     base_logger.warning(f"Validation Error parsing graph artifact {artifact.id} content: {e}")
 
         except Exception as e:
-            logger.error(f"General error processing artifact {artifact.id} (type: {artifact.type}): {e}", exc_info=True)
+            base_logger.error(f"General error processing artifact {artifact.id} (type: {artifact.type}): {e}", exc_info=True)
 
     sorted_chunk_end_times = sorted([t[1] for t in chunk_times])
 
@@ -590,9 +586,9 @@ async def job_status_page(
     summaries = 0
     if processed_artifacts["summary"] is not None:
         summaries = len(processed_artifacts["summary"].chunks)
-    logger.info(f"Found {transcriptions} transcription chunks, {summaries} summary chunks.")
-    logger.info(f"EntityRelation found: {processed_artifacts['entity_relation'] is not None}, Graph found: {processed_artifacts['graph'] is not None}")
-    logger.info(f"Sorted chunk end times for dropdown: {sorted_chunk_end_times}")
+    base_logger.info(f"Found {transcriptions} transcription chunks, {summaries} summary chunks.")
+    base_logger.info(f"EntityRelation found: {processed_artifacts['entity_relation'] is not None}, Graph found: {processed_artifacts['graph'] is not None}")
+    base_logger.info(f"Sorted chunk end times for dropdown: {sorted_chunk_end_times}")
 
 
     context = {
@@ -615,8 +611,7 @@ async def admin_login_get(
 @app.post("/admin/login", name="admin_login_post")
 async def admin_login_post(
         request: Request,
-        username: Annotated[str, Form()],
-        logger: Logger
+        username: Annotated[str, Form()]
 ):
     error = None
     admin_user_id_for_redirect = None
@@ -629,7 +624,7 @@ async def admin_login_post(
     except HTTPException as e:
         error = f"Ошибка API при проверке пользователя: {e.detail}"
     except Exception as e:
-         logger.error(f"Unexpected admin login error for {username}", exc_info=True)
+         base_logger.error(f"Unexpected admin login error for {username}", exc_info=True)
          error = "Внутренняя ошибка сервера при входе."
 
     if admin_user_id_for_redirect:
@@ -645,7 +640,6 @@ async def admin_login_post(
 @app.get("/admin/dashboard", response_class=HTMLResponse, name="admin_dashboard")
 async def admin_dashboard(
     request: Request,
-    logger: Logger,
     verified_admin_id: int = Depends(verify_admin_role),
     message: str | None = None,
     error: str | None = None,
@@ -657,10 +651,10 @@ async def admin_dashboard(
         users_list = [UserResponse(**u) for u in users_data] if users_data else []
     except HTTPException as e:
         api_error = f"Не удалось загрузить пользователей: {e.detail}"
-        logger.error(api_error)
+        base_logger.error(api_error)
     except Exception as e:
          api_error = "Неожиданная ошибка при загрузке пользователей."
-         logger.error(api_error, exc_info=True)
+         base_logger.error(api_error, exc_info=True)
 
     display_error = error or api_error
 
@@ -689,7 +683,6 @@ async def admin_monitoring(
 @app.post("/admin/user/{user_id}/set-role", name="admin_set_user_role")
 async def admin_set_user_role(
     request: Request,
-    logger: Logger,
     user_id: int,
     role: Annotated[str, Form()],
     verified_admin_id: int = Depends(verify_admin_role),
@@ -719,7 +712,7 @@ async def admin_set_user_role(
         except ValidationError as e:
             error = f"Ошибка данных от API: {e}"
         except Exception as e:
-            logger.error(f"Unexpected role update error for user {user_id}", exc_info=True)
+            base_logger.error(f"Unexpected role update error for user {user_id}", exc_info=True)
             error = "Внутренняя ошибка сервера при обновлении роли."
 
     if message: query_params_for_redirect["message"] = message
@@ -732,7 +725,6 @@ async def admin_set_user_role(
 @app.post("/admin/user/{user_id}/delete", name="admin_delete_user")
 async def admin_delete_user(
         request: Request,
-        logger: Logger,
         user_id: int,
         verified_admin_id: int = Depends(verify_admin_role)
 ):
@@ -751,11 +743,11 @@ async def admin_delete_user(
             else:
                 await delete_user_api(user_id)
                 message = f"Пользователь '{user_to_delete.username}' (ID: {user_id}) удален."
-                logger.info(message)
+                base_logger.info(message)
         except HTTPException as e:
             error = f"Ошибка API при удалении пользователя: {e.detail}"
         except Exception:
-            logger.error(f"Unexpected error deleting user {user_id}", exc_info=True)
+            base_logger.error(f"Unexpected error deleting user {user_id}", exc_info=True)
             error = "Внутренняя ошибка сервера при удалении пользователя."
 
     if message: query_params_for_redirect["message"] = message
@@ -767,14 +759,13 @@ async def admin_delete_user(
 
 @router.subscriber("job.status_updated")
 async def handle_job_status_updated(
-        body: JobStatusUpdated,
-        logger: Logger
+        body: JobStatusUpdated
 ):
     job_id = body.id
     status = body.status
-    logger.info(f"Получено обновление статуса для задания {job_id}: {status}")
+    base_logger.info(f"Получено обновление статуса для задания {job_id}: {status}")
     if job_id in job_status_subscriptions:
         for queue in job_status_subscriptions[job_id]:
              asyncio.create_task(queue.put(status))
     else:
-        logger.info(f"Нет активных SSE подписчиков для задания {job_id}")
+        base_logger.info(f"Нет активных SSE подписчиков для задания {job_id}")

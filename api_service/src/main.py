@@ -121,7 +121,6 @@ def find_model_or_raise(model_type: str, action_models: list[str]) -> str:
 @app.post("/jobs", response_model=JobResponse)
 async def create_job(
         request: CreateJobRequest,
-        logger: Logger,
         session: Annotated[Session, Depends(get_session)]
 ):
     job = Job(**request.model_dump())
@@ -144,10 +143,10 @@ async def create_job(
                 video_id = job.video_id
             ), queue=transcription_model)
 
-            logger.info(f"Published {transcription_model}, job_id: {job.id}")
+            base_logger.info(f"Published {transcription_model}, job_id: {job.id}")
 
         case _:
-            logger.error(f"Matching job type for {job.type} not found.")
+            base_logger.error(f"Matching job type for {job.type} not found.")
             raise HTTPException(status_code=400, detail="Incorrect job type")
 
     return job
@@ -239,7 +238,6 @@ async def update_user_role(
     user_id: int,
     role_update: UpdateUserRoleRequest,
     session: Annotated[Session, Depends(get_session)],
-    logger: Logger
 ):
     user = session.get(User, user_id)
     if not user:
@@ -252,7 +250,7 @@ async def update_user_role(
     session.add(user)
     session.commit()
     session.refresh(user)
-    logger.info(f"Updated role of user {user.username} to {user.role}")
+    base_logger.info(f"Updated role of user {user.username} to {user.role}")
     return user
 
 
@@ -260,7 +258,6 @@ async def update_user_role(
 async def delete_user(
         user_id: int,
         session: Annotated[Session, Depends(get_session)],
-        logger: Logger
 ):
     user_to_delete = session.get(User, user_id)
     if not user_to_delete:
@@ -269,11 +266,11 @@ async def delete_user(
     try:
         session.delete(user_to_delete)
         session.commit()
-        logger.info(f"Deleted user {user_id} ('{user_to_delete.username}')")
+        base_logger.info(f"Deleted user {user_id} ('{user_to_delete.username}')")
         return
     except Exception as e:
         session.rollback()
-        logger.error(f"Error deleting user {user_id}: {e}", exc_info=True)
+        base_logger.error(f"Error deleting user {user_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500,
                             detail="Database error during user deletion.")
 

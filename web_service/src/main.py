@@ -358,7 +358,7 @@ async def index(
         "message": message,
         "error": error
     }
-    return templates.TemplateResponse("index.html", context)
+    return templates.TemplateResponse(request=request, name="index.html", context=context)
 
 
 @app.post("/register", response_class=RedirectResponse)
@@ -489,7 +489,7 @@ async def create_job(
                 m_type, m_name = parts
                 if m_type in model_map:
                     model_map[m_type].append({"value": model.name, "name": m_name})
-        return templates.TemplateResponse("index.html", {
+        return templates.TemplateResponse(request=request, name="index.html", context={
             "request": request, "error": error, "user_id": user_id, "model_map": model_map
         })
 
@@ -506,7 +506,7 @@ async def create_job(
                  m_type, m_name = parts
                  if m_type in model_map:
                      model_map[m_type].append({"value": model.name, "name": m_name})
-        return templates.TemplateResponse("index.html", {
+        return templates.TemplateResponse(request=request, name="index.html", context={
             "request": request, "error": error, "user_id": user_id, "model_map": model_map
         })
 
@@ -601,7 +601,7 @@ async def job_status_page(
         "artifacts": processed_artifacts,
         "sorted_chunk_end_times": sorted_chunk_end_times,
     }
-    return templates.TemplateResponse("job_status.html", context)
+    return templates.TemplateResponse(request=request, name="job_status.html", context=context)
 
 
 @app.get("/admin", response_class=HTMLResponse)
@@ -609,7 +609,7 @@ async def job_status_page(
 async def admin_login_get(
         request: Request,
         error: str | None = None):
-    return templates.TemplateResponse("admin/login.html", {"request": request, "error": error})
+    return templates.TemplateResponse(request=request, name="admin/login.html", context={"request": request, "error": error})
 
 
 @app.post("/admin/login", name="admin_login_post")
@@ -664,7 +664,7 @@ async def admin_dashboard(
 
     display_error = error or api_error
 
-    return templates.TemplateResponse("admin/dashboard.html", {
+    return templates.TemplateResponse(request=request, name="admin/dashboard.html", context={
         "request": request,
         "users": users_list,
         "admin_user_id": verified_admin_id,
@@ -679,7 +679,7 @@ async def admin_monitoring(
     verified_admin_id: int = Depends(verify_admin_role)
 ):
     grafana_url = config.GRAFANA_DASHBOARD_URL
-    return templates.TemplateResponse("admin/monitoring.html", {
+    return templates.TemplateResponse(request=request, name="admin/monitoring.html", context={
         "request": request,
         "grafana_url": grafana_url,
         "admin_user_id": verified_admin_id

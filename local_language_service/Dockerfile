@@ -1,8 +1,6 @@
-﻿FROM python:3.13-alpine
+﻿FROM python:3.12-slim
 
 WORKDIR /app
-
-RUN apk add gcc python3-dev musl-dev linux-headers
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 

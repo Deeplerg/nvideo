@@ -1,13 +1,18 @@
-﻿from fastapi import FastAPI, Depends
+﻿import logging
+from fastapi import FastAPI, Depends
 from fastapi_utils.tasks import repeat_every
 from faststream.rabbit.fastapi import RabbitRouter, Logger
 from google import genai
+from openai import AsyncOpenAI
 from shared.language import *
 from shared.models import SummaryResult
 from .config import AppConfiguration
 from shared.models import *
 from shared.api_helpers.decorators import fail_job_on_exception
 from .services.gemini_language_model import GeminiLanguageModel
+from .services.openai_language_model import OpenAILanguageModel
+
+logging.basicConfig(level=logging.INFO)
 
 router = RabbitRouter(AppConfiguration.AMQP_URL, fail_fast=False)
 broker = router.broker
@@ -15,6 +20,7 @@ app = FastAPI()
 app.include_router(router)
 
 gemini_client : genai.Client | None = None
+openai_client: AsyncOpenAI | None = None
 
 def get_gemini_client() -> genai.Client:
     global gemini_client
@@ -24,6 +30,17 @@ def get_gemini_client() -> genai.Client:
 
     return genai.Client(api_key=AppConfiguration.LANGUAGE_MODEL_PROVIDER_API_KEY)
 
+def get_openai_client() -> AsyncOpenAI:
+    global openai_client
+    if openai_client is not None:
+        return openai_client
+
+    openai_client = AsyncOpenAI(
+        base_url=AppConfiguration.LANGUAGE_MODEL_PROVIDER_BASE_URL,
+        api_key=AppConfiguration.LANGUAGE_MODEL_PROVIDER_API_KEY,
+    )
+    return openai_client
+
 def get_model(
         logger: Logger
 ) -> LanguageModel:
@@ -32,9 +49,12 @@ def get_model(
         case "google":
             client = get_gemini_client()
             return GeminiLanguageModel(get_language_model_name(), client, logger)
+        case "openai":
+            client = get_openai_client()
+            return OpenAILanguageModel(get_language_model_name(), client, logger)
         case _:
-            client = get_gemini_client()
-            return GeminiLanguageModel(get_language_model_name(), client, logger)
+            client = get_openai_client()
+            return OpenAILanguageModel(get_language_model_name(), client, logger)
 
 def get_language_service(
         logger: Logger,

@@ -12,8 +12,12 @@ from shared.transcription.utils import convert_to_chunk_results
 from shared.api_helpers.decorators import fail_job_on_exception
 from .services.gemini_transcription_model import GeminiTranscriptionModel
 from .services.deepgram_transcription_model import DeepgramTranscriptionModel
+from .services.openai_transcription_model import OpenAITranscriptionModel
 from .config import AppConfiguration
 from google import genai
+from openai import AsyncOpenAI
+
+logging.basicConfig(level=logging.INFO)
 
 transcription_model_name = AppConfiguration.TRANSCRIPTION_MODEL
 transcription_provider = AppConfiguration.TRANSCRIPTION_PROVIDER
@@ -27,6 +31,7 @@ app.include_router(router)
 
 deepgram_client : DeepgramClient | None = None
 gemini_client : genai.Client | None = None
+openai_client: AsyncOpenAI | None = None
 
 def get_deepgram_client():
     global deepgram_client
@@ -34,7 +39,7 @@ def get_deepgram_client():
     if deepgram_client is not None:
         return deepgram_client
 
-    return DeepgramClient(api_key=AppConfiguration.DEEPGRAM_TRANSCRIPTION_API_KEY)
+    return DeepgramClient(api_key=AppConfiguration.TRANSCRIPTION_PROVIDER_API_KEY)
 
 def get_gemini_client() -> genai.Client:
     global gemini_client
@@ -42,7 +47,18 @@ def get_gemini_client() -> genai.Client:
     if gemini_client is not None:
         return gemini_client
 
-    return genai.Client(api_key=AppConfiguration.GEMINI_TRANSCRIPTION_API_KEY)
+    return genai.Client(api_key=AppConfiguration.TRANSCRIPTION_PROVIDER_API_KEY)
+
+def get_openai_client() -> AsyncOpenAI:
+    global openai_client
+    if openai_client is not None:
+        return openai_client
+
+    openai_client = AsyncOpenAI(
+        base_url=AppConfiguration.TRANSCRIPTION_PROVIDER_BASE_URL,
+        api_key=AppConfiguration.TRANSCRIPTION_PROVIDER_API_KEY
+    )
+    return openai_client
 
 def get_custom_logger(name: str | None) -> logging.Logger:
     return logging.getLogger(name)
@@ -57,6 +73,11 @@ def get_gemini_model() -> GeminiTranscriptionModel:
     logger = get_custom_logger("gemini")
     return GeminiTranscriptionModel(logger, transcription_model_name, client)
 
+def get_openai_model() -> OpenAITranscriptionModel:
+    client = get_openai_client()
+    logger = get_custom_logger("openai")
+    return OpenAITranscriptionModel(logger, transcription_model_name, client)
+
 def get_transcription_service():
     model: TranscriptionModel
     match transcription_provider:
@@ -64,8 +85,10 @@ def get_transcription_service():
             model = get_deepgram_model()
         case "google":
             model = get_gemini_model()
+        case "openai":
+            model = get_openai_model()
         case _:
-            model = get_gemini_model()
+            model = get_openai_model()
 
     return TranscriptionService(model)
 

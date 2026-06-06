@@ -11,5 +11,8 @@ __all__ = [
     'TextMessage', 'FileMessage', 'LanguageModel',
 
     #language_service
-    'ChunkSummaryResponse', 'LanguageService'
+    'ChunkSummaryResponse', 'LanguageService',
+
+    #topics_schema
+    'TopicSchema', 'TopicExtractionSchema', 'TagMapping', 'MacroTagMappingSchema',
 ]

@@ -12,5 +12,9 @@ class TopicSchema(BaseModel):
 class TopicExtractionSchema(BaseModel):
     topics: list[TopicSchema]
 
+class TagMapping(BaseModel):
+    original_tag: str = Field(description="The original tag")
+    macro_category: str = Field(description="The broad macro-category it belongs to")
+
 class MacroTagMappingSchema(BaseModel):
-    mapping: dict[str, str] = Field(description="Mapping of original tags to their macro-categories")
+    mapping: list[TagMapping] = Field(description="List of tag mappings")

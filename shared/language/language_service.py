@@ -172,8 +172,9 @@ class LanguageService:
 
         try:
             result_dict = json.loads(response)
-            return result_dict.get("mapping", {})
-        except json.JSONDecodeError as e:
+            mapping_list = result_dict.get("mapping", [])
+            return {item["original_tag"]: item["macro_category"] for item in mapping_list}
+        except (json.JSONDecodeError, KeyError) as e:
             self.__logger.error(f"Failed to parse macro tags JSON: {e}")
             return {}
 

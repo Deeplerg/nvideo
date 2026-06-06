@@ -75,6 +75,8 @@ class GeminiHelper:
                     error_type = "Resource exhaustion error"
                 elif e.code == 499:
                     error_type = "Request canceled"
+                elif e.code == 503:
+                    error_type = "Experiencing high demand"
 
                 self.__logger.info(f"{error_type}. Retrying in {sleep_seconds} ({i} out of {retries})")
                 await asyncio.sleep(sleep_seconds)

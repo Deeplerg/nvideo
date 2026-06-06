@@ -66,7 +66,7 @@ class GeminiHelper:
                 # treat 499 "canceled" the same as 429 "resource exhausted".
                 # 499 likely means there's a problem on Google's side:
                 # https://discuss.ai.google.dev/t/anyone-experiencing-google-api-core-exceptions-cancelled-499-the-operation-was-cancelled/80743
-                if e.code != 429 and e.code != 499:
+                if e.code != 429 and e.code != 499 and e.code != 503:
                     raise
                 last_exception = e
 

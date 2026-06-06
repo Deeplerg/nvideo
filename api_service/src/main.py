@@ -11,6 +11,8 @@ from shared.models import *
 from .database_models import *
 from prometheus_client import Counter, make_asgi_app
 
+logging.basicConfig(level=logging.INFO)
+
 
 USERS_REGISTERED_COUNTER = Counter(
     'nvideo_users_registered',

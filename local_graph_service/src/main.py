@@ -1,4 +1,5 @@
 ﻿import asyncio
+import logging
 from fastapi import FastAPI, Depends
 from fastapi_utils.tasks import repeat_every
 from faststream.rabbit.fastapi import RabbitRouter, Logger
@@ -7,6 +8,8 @@ from .config import AppConfiguration
 from shared.models import *
 from shared.graph import *
 from .services.sentence_transformers_embedding_model import SentenceTransformersEmbeddingModel
+
+logging.basicConfig(level=logging.INFO)
 
 embed_model = AppConfiguration.GRAPH_EMBED_MODEL
 embed_model_full_name = f"graph.local-{embed_model}"
